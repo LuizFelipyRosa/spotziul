@@ -1,5 +1,7 @@
 {
-  "appId": "com.meuplayer.local",
+  "appId": "com.meuplayer.completo",
   "appName": "Meu Player",
-  "webDir": "www"
+  "webDir": "www",
+  "server": { "androidScheme": "http", "cleartext": true },
+  "plugins": { "CapacitorHttp": { "enabled": true } }
 }
