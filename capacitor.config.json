@@ -1,6 +1,6 @@
 {
   "appId": "com.meuplayer.completo",
-  "appName": "Meu Player",
+  "appName": "spotziul",
   "webDir": "www",
   "server": { "androidScheme": "http", "cleartext": true },
   "plugins": { "CapacitorHttp": { "enabled": true } }
