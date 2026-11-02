@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Meu Player</title>
+<title>spotziul</title>
 <style>
 :root{--bg:#121212;--hi:#2a2a2a;--tx:#fff;--mu:#b3b3b3;--ac:#1ed760;--tint:#3b2a5c}
 *{box-sizing:border-box;margin:0;-webkit-tap-highlight-color:transparent}
@@ -41,7 +41,7 @@ h2{font-size:22px;margin:26px 0 12px}
 .item span{color:var(--mu);font-size:13px}
 .item.on b{color:var(--ac)}
 .dots{padding:8px 4px;color:var(--mu);font-size:22px;line-height:1}
-input[type=text],input[type=password]{width:100%;padding:13px 14px;border-radius:8px;border:0;background:var(--hi);color:var(--tx);font-size:16px;margin-bottom:12px}
+input[type=text],input[type=password],textarea{width:100%;padding:13px 14px;border-radius:8px;border:0;background:var(--hi);color:var(--tx);font-size:16px;margin-bottom:12px}
 .btn{background:var(--ac);color:#000;font-weight:700;padding:12px 26px;border-radius:30px}
 .btn.alt{background:var(--hi);color:var(--tx)}
 .acts{display:flex;gap:10px;margin:4px 0 12px}
@@ -88,7 +88,7 @@ nav button.act{color:var(--tx)}
 #sheet button{text-align:left;padding:14px 0;font-size:16px}
 #sheet .red{color:#ff6b6b}
 #toast{position:fixed;left:50%;bottom:calc(120px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:#fff;color:#000;padding:10px 16px;border-radius:20px;font-size:14px;z-index:9;max-width:85%;text-align:center}
-#serr{color:#ff6b6b;font-size:14px;min-height:20px;margin-bottom:10px}
+#serr,#uerr{color:#ff6b6b;font-size:14px;min-height:20px;margin-bottom:10px}
 button.me{padding:0;color:#fff;overflow:hidden}
 .me img,.avatar img{width:100%;height:100%;object-fit:cover}
 .pf{display:flex;align-items:center;gap:16px;margin:6px 0 20px}
@@ -106,6 +106,12 @@ button.me{padding:0;color:#fff;overflow:hidden}
 .stat .num{font-size:54px;font-weight:800;line-height:1}
 .stat .art{width:100%;aspect-ratio:1;font-size:60px}
 .stat.round .art{border-radius:50%}
+textarea{font:inherit;font-size:13px}
+.msg{max-width:80%;padding:8px 12px;border-radius:14px;background:#2a2a2a;margin:6px 0;width:fit-content;overflow-wrap:anywhere}
+.msg.mine{background:var(--ac);color:#000;margin-left:auto}
+.msg small{display:block;font-size:10px;opacity:.6;margin-top:2px}
+#cin{position:sticky;bottom:0;display:flex;gap:8px;background:var(--bg);padding:10px 0 4px}
+#cin input{margin:0}
 </style>
 </head>
 <body>
@@ -121,6 +127,7 @@ button.me{padding:0;color:#fff;overflow:hidden}
     <button data-tab="home"><svg viewBox="0 0 24 24"><path d="M4 11 12 4l8 7v9h-5v-6H9v6H4z"/></svg>Início</button>
     <button data-tab="search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>Buscar</button>
     <button data-tab="lib"><svg viewBox="0 0 24 24"><path d="M5 4v16M10 4v16M15 5l5 14"/></svg>Biblioteca</button>
+    <button data-tab="social"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/><path d="M16 4.500a3.500 3.500 0 0 1 0 7M18 14.500c2 .6 3.500 2.300 3.500 5.500"/></svg>Amigos</button>
     <button id="addb"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Adicionar</button>
   </nav>
 </div>
@@ -234,6 +241,124 @@ $('#pfile').onchange=e=>{
 };
 /*ENDPROFILE*/
 
+/*SOCIAL*/
+let db=null,me=null,sstate=localStorage.getItem('fbcfg')?'loading':'nocfg',serr='',initP=null,myF={},U={},P={},R=[],unsubs=[],chatId='';
+const watched=new Set();
+const FBU='https://www.gstatic.com/firebasejs/10.12.2/firebase-';
+const loadJs=u=>new Promise((ok,no)=>{const e=document.createElement('script');e.src=u;e.onload=ok;e.onerror=()=>no(new Error('Sem internet'));document.head.appendChild(e)});
+const TS=()=>firebase.database.ServerValue.TIMESTAMP;
+function parseCfg(t){const c={};String(t).replace(/(\w+)\s*:\s*["']([^"']+)["']/g,(m,k,v)=>{c[k]=v});return c}
+function socialInit(){
+  return initP||(initP=(async()=>{
+    try{
+      sstate='loading';
+      const c=JSON.parse(localStorage.getItem('fbcfg'));
+      if(!window.firebase){for(const x of ['app','auth','database'])await loadJs(FBU+x+'-compat.js')}
+      if(!firebase.apps.length)firebase.initializeApp(c);
+      db=firebase.database();
+      const au=firebase.auth();
+      const u=(await new Promise((ok,no)=>{const off=au.onAuthStateChanged(x=>{off();ok(x)},no)}))||(await au.signInAnonymously()).user;
+      const n=(await db.ref('users/'+u.uid+'/name').once('value')).val();
+      me={uid:u.uid,name:n};
+      if(n){sstate='ready';presence()}else sstate='noname';
+    }catch(e){sstate='error';serr=e.message||String(e)}
+    initP=null;
+    if(cur.v==='social')render();
+  })());
+}
+function presence(){
+  const r=db.ref('presence/'+me.uid);
+  db.ref('.info/connected').on('value',x=>{if(x.val())r.onDisconnect().set({online:false,last:TS()}).then(()=>r.set({online:true,last:TS()}))});
+}
+function watch(id){
+  if(watched.has(id))return;watched.add(id);
+  db.ref('users/'+id+'/name').on('value',x=>{U[id]=x.val();drawF();drawR()});
+  db.ref('presence/'+id+'/online').on('value',x=>{P[id]=!!x.val();drawF();drawR()});
+}
+const dot=on=>`<i style="display:inline-block;width:9px;height:9px;border-radius:50%;background:${on?'var(--ac)':'#555'};margin-right:6px"></i>`;
+const fbtn=id=>`<button class="btn${myF[id]?' alt':''}" style="padding:8px 14px;font-size:13px" data-fol="${id}">${myF[id]?'Seguindo':'Seguir'}</button>`;
+const urow=(id,n)=>`<div class="item" data-chat="${id}" data-n="${esc(n)}"><div class="avatar" style="flex:none;width:48px;height:48px;font-size:20px">${esc(String(n||'?').charAt(0).toUpperCase())}</div><div><b>@${esc(n)}</b><span>${dot(P[id])}${P[id]?'Online':'Offline'}</span></div>${fbtn(id)}</div>`;
+function drawF(){const e=$('#sfr');if(!e)return;const ids=Object.keys(myF);e.innerHTML=ids.length?ids.map(id=>urow(id,U[id]||'…')).join(''):'<p class="sub">Você ainda não segue ninguém. Busque alguém pelo nome acima.</p>'}
+function drawR(){const e=$('#sres');if(!e)return;e.innerHTML=R.map(x=>urow(x[0],x[1])).join('')}
+async function find(q){
+  q=q.trim().toLowerCase();
+  if(q.length<2){R=[];drawR();return}
+  try{
+    const x=await db.ref('usernames').orderByKey().startAt(q).endAt(q+'\uf8ff').limitToFirst(15).once('value');
+    R=[];x.forEach(c=>{if(c.val()!==me.uid)R.push([c.val(),c.key])});
+    R.forEach(r=>watch(r[0]));drawR();
+    if(!R.length)$('#sres').innerHTML='<p class="sub">Ninguém encontrado com esse nome.</p>';
+  }catch(e){toast('Erro na busca: '+e.message)}
+}
+const follow=id=>db.ref('follows/'+me.uid+'/'+id)[myF[id]?'remove':'set'](true);
+function socialView(){
+  const h='<h1>Amigos</h1>';
+  if(sstate==='nocfg')return h+'<p class="sub" style="margin-bottom:12px">Para seguir pessoas e conversar, conecte o app a uma conta online (Firebase). Cole abaixo o código de configuração.</p><textarea id="fbc" rows="8" placeholder="const firebaseConfig = { ... }"></textarea><div id="uerr"></div><button class="btn" data-act="ssave">Salvar e conectar</button>';
+  if(sstate==='loading')return h+'<p class="sub">Conectando…</p>';
+  if(sstate==='error')return h+`<p class="sub">Não foi possível conectar: ${esc(serr)}</p><div class="acts"><button class="btn" data-act="sretry">Tentar de novo</button><button class="btn alt" data-act="sreset">Trocar configuração</button></div>`;
+  if(sstate==='noname')return h+'<p class="sub" style="margin-bottom:12px">Escolha seu nome de usuário. Ele é único e as pessoas vão te achar por ele.</p><input type="text" id="unm" maxlength="20" placeholder="seunome" autocapitalize="off" autocomplete="off" value="'+esc(norm(profile.name).replace(/[^a-z0-9_]/g,''))+'"><div id="uerr"></div><button class="btn" data-act="sclaim">Criar conta</button>';
+  return h+`<p class="sub" style="margin-bottom:12px">Você é @${esc(me.name)}</p><input type="text" id="sq" placeholder="Buscar pessoas pelo nome" autocapitalize="off" autocomplete="off"><div id="sres"></div><h2>Seguindo</h2><div id="sfr"></div><div class="acts" style="margin-top:20px"><button class="btn alt" data-act="sreset">Sair da conta online</button></div>`;
+}
+function socialMount(){
+  if(sstate==='loading'&&!initP)socialInit();
+  if(sstate!=='ready')return;
+  const fr=db.ref('follows/'+me.uid);
+  const cb=fr.on('value',x=>{myF=x.val()||{};Object.keys(myF).forEach(watch);drawF();drawR()});
+  unsubs.push(()=>fr.off('value',cb));
+  let t;$('#sq').oninput=e=>{clearTimeout(t);t=setTimeout(()=>find(e.target.value),350)};
+}
+function saveCfg(){
+  const c=parseCfg($('#fbc').value);
+  if(!c.apiKey||!c.projectId||!c.databaseURL){$('#uerr').textContent='Faltou algo no código: ele precisa ter apiKey, projectId e databaseURL. Crie o Realtime Database antes de registrar o app web.';return}
+  try{localStorage.setItem('fbcfg',JSON.stringify(c))}catch(e){}
+  sstate='loading';render();
+}
+async function claim(){
+  const n=$('#unm').value.trim().toLowerCase(),e=$('#uerr');
+  if(!/^[a-z0-9_]{3,20}$/.test(n)){e.textContent='Use de 3 a 20 letras minúsculas, números ou _ (sem espaço ou acento).';return}
+  e.textContent='Verificando…';
+  try{
+    const r=await db.ref('usernames/'+n).transaction(c=>c===null?me.uid:undefined);
+    if(!r.committed){e.textContent='Esse nome já está em uso. Tente outro.';return}
+    await db.ref('users/'+me.uid).set({name:n});
+    me.name=n;sstate='ready';presence();render();
+  }catch(x){e.textContent='Erro: '+x.message}
+}
+async function sreset(){
+  if(!confirm('Sair da conta online? Seu nome de usuário será liberado.'))return;
+  try{
+    if(db&&me){
+      const u=me.uid;
+      await Promise.all([me.name?db.ref('usernames/'+me.name).remove():null,db.ref('users/'+u).remove(),db.ref('presence/'+u).remove(),db.ref('follows/'+u).remove()]);
+      await firebase.auth().signOut();
+    }
+  }catch(e){}
+  try{localStorage.removeItem('fbcfg')}catch(e){}
+  db=null;me=null;myF={};R=[];sstate='nocfg';render();
+}
+function chatView(){
+  return backBtn+`<h1>@${esc(cur.n||'')}</h1><div id="msgs"></div><div id="cin"><input type="text" id="cmsg" placeholder="Mensagem" maxlength="500" autocomplete="off"><button class="btn" data-act="csend">Enviar</button></div>`;
+}
+function chatMount(){
+  if(!me||!db)return;
+  chatId=[me.uid,cur.k].sort().join('_');
+  const q=db.ref('chats/'+chatId).limitToLast(100);
+  const cb=q.on('child_added',x=>{
+    const m=x.val(),box=$('#msgs');if(!box)return;
+    box.insertAdjacentHTML('beforeend',`<div class="msg${m.from===me.uid?' mine':''}"><div>${esc(m.text)}</div><small>${m.t?new Date(m.t).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}):''}</small></div>`);
+    $('#main').scrollTop=$('#main').scrollHeight;
+  });
+  unsubs.push(()=>q.off('child_added',cb));
+  $('#cmsg').onkeydown=e=>{if(e.key==='Enter')sendMsg()};
+}
+async function sendMsg(){
+  const i=$('#cmsg'),t=(i.value||'').trim();
+  if(!t||!chatId)return;
+  i.value='';
+  try{await db.ref('chats/'+chatId).push({from:me.uid,text:t.slice(0,500),t:TS()})}catch(e){toast('Não foi possível enviar.');i.value=t}
+}
+/*ENDSOCIAL*/
+
 /*MD5*/
 function md5(s){
   const k=new Int32Array(64),r=[7,12,17,22,5,9,14,20,4,11,16,23,6,10,15,21];
@@ -265,7 +390,7 @@ function md5(s){
 let cfg=null;
 try{cfg=JSON.parse(localStorage.getItem('cfg'))}catch(e){}
 const native=!!(window.Capacitor&&Capacitor.isNativePlatform&&Capacitor.isNativePlatform());
-const surl=(ep,p)=>cfg.url+'/rest/'+ep+'?'+new URLSearchParams(Object.assign({u:cfg.user,t:cfg.token,s:cfg.salt,v:'1.16.1',c:'MeuPlayer',f:'json'},p));
+const surl=(ep,p)=>cfg.url+'/rest/'+ep+'?'+new URLSearchParams(Object.assign({u:cfg.user,t:cfg.token,s:cfg.salt,v:'1.16.1',c:'spotziul',f:'json'},p));
 async function api(ep,p){
   const r=await fetch(surl(ep,p));
   const j=(await r.json())['subsonic-response'];
@@ -455,7 +580,7 @@ $('#prev').innerHTML=IC.prev;$('#next').innerHTML=IC.next;$('#shuf').innerHTML=I
 
 /* ---------- Navegação ---------- */
 const tab=v=>{root=v;hist=[];cur={v};render()};
-const go=(v,k)=>{hist.push(cur);cur={v,k};render()};
+const go=(v,k,n)=>{hist.push(cur);cur={v,k,n};render()};
 const back=()=>{cur=hist.pop()||{v:root};render()};
 document.querySelectorAll('nav [data-tab]').forEach(b=>b.onclick=()=>tab(b.dataset.tab));
 $('#addb').onclick=()=>$('#file').click();
@@ -548,26 +673,34 @@ function doSearch(q){
 
 function render(keep){
   const m=$('#main'),y=keep?m.scrollTop:0;
-  lists={};
+  lists={};unsubs.forEach(x=>x());unsubs=[];
   document.querySelectorAll('nav [data-tab]').forEach(b=>b.classList.toggle('act',b.dataset.tab===root));
   if(cur.v==='search'){
     m.innerHTML='<h1>Buscar</h1><input type="text" id="q" placeholder="Músicas, álbuns ou artistas" autocomplete="off"><div id="res"></div>';
     $('#q').oninput=e=>doSearch(e.target.value);doSearch('');
-  }else m.innerHTML=(({home,lib,srv:srvView,profile:profileView,stats:statsView,edit:editView,recent:recentView})[cur.v]||detail)();
+  }else m.innerHTML=(({home,lib,srv:srvView,profile:profileView,stats:statsView,edit:editView,recent:recentView,social:socialView,chat:chatView})[cur.v]||detail)();
   m.scrollTop=y;
+  if(cur.v==='social')socialMount();else if(cur.v==='chat')chatMount();
   ui();
 }
-const refresh=()=>cur.v==='search'?doSearch($('#q').value):render(true);
+const refresh=()=>cur.v==='search'?doSearch($('#q').value):(cur.v==='chat'||cur.v==='social'?0:render(true));
 
 $('#main').onclick=e=>{
-  const t=e.target.closest('[data-menu],[data-l],[data-go],[data-chip],[data-lib],[data-act],[data-sw],[data-per]');
+  const t=e.target.closest('[data-menu],[data-l],[data-go],[data-chip],[data-lib],[data-act],[data-sw],[data-per],[data-fol],[data-chat]');
   if(!t)return;
   const d=t.dataset;
   if(d.menu)sheet(d.menu);
   else if(d.l)play(lists[d.l],+d.i);
-  else if(d.go)go(d.go,d.k);
+  else if(d.go)go(d.go,d.k,d.n);
   else if(d.chip){chip=d.chip;render()}
   else if(d.per){per=d.per;render()}
+  else if(d.fol)follow(d.fol)
+  else if(d.chat)go('chat',d.chat,d.n)
+  else if(d.act==='ssave')saveCfg()
+  else if(d.act==='sclaim')claim()
+  else if(d.act==='sretry'){sstate='loading';render()}
+  else if(d.act==='sreset')sreset()
+  else if(d.act==='csend')sendMsg()
   else if(d.sw){readName();profile.ac=d.sw;saveProfile();render(true)}
   else if(d.act==='pickAvatar'){readName();$('#pfile').click()}
   else if(d.act==='saveProfile'){readName();saveProfile();back();toast('Perfil salvo')}
