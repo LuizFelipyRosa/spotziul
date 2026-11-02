@@ -89,7 +89,23 @@ nav button.act{color:var(--tx)}
 #sheet .red{color:#ff6b6b}
 #toast{position:fixed;left:50%;bottom:calc(120px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:#fff;color:#000;padding:10px 16px;border-radius:20px;font-size:14px;z-index:9;max-width:85%;text-align:center}
 #serr{color:#ff6b6b;font-size:14px;min-height:20px;margin-bottom:10px}
-button.me{padding:0;color:#fff}
+button.me{padding:0;color:#fff;overflow:hidden}
+.me img,.avatar img{width:100%;height:100%;object-fit:cover}
+.pf{display:flex;align-items:center;gap:16px;margin:6px 0 20px}
+.avatar{width:84px;height:84px;border-radius:50%;background:linear-gradient(135deg,#e8590c,#7c3aed);display:grid;place-items:center;font-size:34px;font-weight:700;overflow:hidden;flex:none}
+.menu{display:flex;align-items:center;justify-content:space-between;padding:16px 0;font-size:17px;cursor:pointer;border-bottom:1px solid #222}
+.menu span{color:var(--mu)}
+.sw{display:flex;gap:12px;margin:8px 0 22px}
+.sw button{width:42px;height:42px;border-radius:50%;border:3px solid transparent}
+.sw button.on{border-color:#fff}
+.cols{display:flex;gap:12px;align-items:flex-start}
+.cols>div{flex:1;min-width:0}
+.stat{background:#1f1f1f;border-radius:12px;padding:16px;margin-bottom:12px}
+.stat .sub{margin-bottom:6px}
+.stat b{display:block;font-size:20px;margin-bottom:10px;overflow-wrap:anywhere}
+.stat .num{font-size:54px;font-weight:800;line-height:1}
+.stat .art{width:100%;aspect-ratio:1;font-size:60px}
+.stat.round .art{border-radius:50%}
 </style>
 </head>
 <body>
@@ -125,6 +141,7 @@ button.me{padding:0;color:#fff}
 <div id="sheet" hidden></div>
 <div id="toast" hidden></div>
 <input type="file" id="file" accept="audio/*" multiple hidden>
+<input type="file" id="pfile" accept="image/*" hidden>
 <script>
 const $=s=>document.querySelector(s);
 const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -132,6 +149,90 @@ const fmt=s=>{s=Math.floor(s||0);return Math.floor(s/60)+':'+String(s%60).padSta
 const norm=s=>String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
 const hue=s=>{let h=0;for(const c of String(s))h=(h*31+c.charCodeAt(0))%360;return h};
 const byTitle=(a,b)=>norm(a.title).localeCompare(norm(b.title));
+
+/*PROFILE*/
+let profile={name:'',avatar:'',ac:'#1ed760'};
+try{Object.assign(profile,JSON.parse(localStorage.getItem('profile'))||{})}catch(e){}
+const applyProfile=()=>document.documentElement.style.setProperty('--ac',profile.ac||'#1ed760');
+const saveProfile=()=>{try{localStorage.setItem('profile',JSON.stringify(profile))}catch(e){}applyProfile()};
+const COLORS=['#1ed760','#3ea6ff','#ff9f1a','#ff5c9a','#b388ff'];
+let per='Semana',lastT=0,pendSecs=0,tracked=null,STATS={};
+try{STATS=JSON.parse(localStorage.getItem('stats'))||{}}catch(e){}
+const dayKey=d=>{d=d||new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
+const fmtDur=x=>{x=Math.round(x||0);if(x<60)return x+' s';const m=Math.round(x/60);if(m<60)return m+' min';return Math.floor(m/60)+' h '+String(m%60).padStart(2,'0')+' min'};
+function addTime(s,d){
+  tracked=s;s.secs=(s.secs||0)+d;
+  const k=dayKey(),day=STATS[k]||(STATS[k]={});
+  day[s.id]=(day[s.id]||0)+d;
+  pendSecs+=d;
+  if(pendSecs>=20)flush();
+}
+function flush(){
+  if(!pendSecs)return;
+  pendSecs=0;
+  try{
+    const lim=dayKey(new Date(Date.now()-400*864e5));
+    Object.keys(STATS).forEach(k=>{if(k<lim)delete STATS[k]});
+    localStorage.setItem('stats',JSON.stringify(STATS,(k,v)=>typeof v==='number'?Math.round(v):v));
+  }catch(e){}
+  if(tracked)save(tracked);
+}
+function period(){
+  const days=per==='Semana'?7:per==='Mês'?30:0;
+  const lim=days?dayKey(new Date(Date.now()-(days-1)*864e5)):'';
+  const by={};
+  Object.keys(STATS).forEach(k=>{if(k>=lim)Object.keys(STATS[k]).forEach(id=>{by[id]=(by[id]||0)+STATS[k][id]})});
+  return by;
+}
+const avatarInner=()=>profile.avatar?`<img src="${profile.avatar}" alt="">`:esc((profile.name||'M').trim().charAt(0).toUpperCase()||'M');
+const avatarBtn=()=>`<button class="me" data-go="profile" aria-label="Perfil">${avatarInner()}</button>`;
+function statsView(){
+  const by=period(),byId=new Map(songs.map(s=>[s.id,s]));
+  let total=0;const byArt={},byAlb={},sg=[];
+  Object.keys(by).forEach(id=>{
+    const v=by[id],s=byId.get(id);
+    total+=v;if(!s)return;
+    sg.push([s,v]);
+    const a=byArt[s.artist]||(byArt[s.artist]={n:s.artist,v:0,s});a.v+=v;
+    const k=s.album+'|'+s.artist,b=byAlb[k]||(byAlb[k]={n:s.album,v:0,s});b.v+=v;
+  });
+  sg.sort((x,y)=>y[1]-x[1]);
+  const ta=Object.values(byArt).sort((x,y)=>y.v-x.v)[0],tb=Object.values(byAlb).sort((x,y)=>y.v-x.v)[0],ts=sg[0];
+  let h=backBtn+'<h1>Estatísticas musicais</h1><div class="top">'+chips(['Semana','Mês','Tudo'],per,'per')+'</div>';
+  if(!total)return h+'<p class="sub">Ainda não há nada por aqui. Ouça algumas músicas e volte para ver seus números.</p>';
+  const left=`<div class="stat"><div class="sub">Minutos ouvidos</div><div class="num">${Math.round(total/60)}</div></div>`+(ta?`<div class="stat round"><div class="sub">Artista mais ouvido</div><b>${esc(ta.n)}</b>${art(ta.s)}</div>`:'');
+  const right=(ts?`<div class="stat"><div class="sub">Música mais ouvida</div><b>${esc(ts[0].title)}</b>${art(ts[0])}<div class="sub" style="margin:8px 0 0">${fmtDur(ts[1])}</div></div>`:'')+(tb?`<div class="stat"><div class="sub">Álbum mais ouvido</div><b>${esc(tb.n)}</b>${art(tb.s)}</div>`:'');
+  const top=L('l',sg.slice(0,15).map(x=>x[0]));
+  return h+`<div class="cols"><div>${left}</div><div>${right}</div></div><h2>Mais ouvidas</h2>`+sg.slice(0,15).map((x,i)=>`<div class="item" data-l="l" data-i="${i}">${art(x[0])}<div><b>${esc(x[0].title)}</b><span>${esc(x[0].artist)} · ${fmtDur(x[1])}</span></div></div>`).join('');
+}
+function recentView(){
+  const list=L('l',songs.filter(s=>s.last).sort((a,b)=>b.last-a.last).slice(0,50));
+  return backBtn+'<h1>Recentes</h1>'+(list.length?list.map((s,i)=>row(s,i,'l')).join(''):'<p class="sub">Você ainda não tocou nada.</p>');
+}
+function profileView(){
+  const total=Object.keys(STATS).reduce((t,k)=>t+Object.keys(STATS[k]).reduce((a,id)=>a+STATS[k][id],0),0);
+  return backBtn+`<div class="pf"><div class="avatar">${avatarInner()}</div><div><h1 style="margin:0 0 4px">${esc(profile.name||'Seu nome')}</h1><span class="sub">${songs.length} músicas · ${fmtDur(total)} ouvidos</span></div></div>`+
+    `<div class="menu" data-go="edit">Editar perfil<span>›</span></div><div class="menu" data-go="stats">Estatísticas musicais<span>›</span></div><div class="menu" data-go="recent">Recentes<span>›</span></div><div class="menu" data-go="srv">Servidor<span>${cfg?'Conectado ›':'›'}</span></div>`;
+}
+function editView(){
+  return backBtn+'<h1>Editar perfil</h1><div class="pf"><div class="avatar" data-act="pickAvatar" style="cursor:pointer">'+avatarInner()+'</div><span class="sub">Toque na foto para trocar</span></div><input type="text" id="pn" maxlength="30" placeholder="Seu nome" value="'+esc(profile.name)+'" autocomplete="off"><h2>Cor do app</h2><div class="sw">'+COLORS.map(c=>`<button data-sw="${c}" class="${profile.ac===c?'on':''}" style="background:${c}" aria-label="Cor"></button>`).join('')+'</div><button class="btn" data-act="saveProfile">Salvar</button>';
+}
+const readName=()=>{const n=$('#pn');if(n)profile.name=n.value.trim()};
+$('#pfile').onchange=e=>{
+  const f=e.target.files[0];e.target.value='';
+  if(!f)return;
+  const im=new Image(),u=URL.createObjectURL(f);
+  im.onload=()=>{
+    const c=document.createElement('canvas');c.width=c.height=256;
+    const m=Math.min(im.width,im.height);
+    c.getContext('2d').drawImage(im,(im.width-m)/2,(im.height-m)/2,m,m,0,0,256,256);
+    profile.avatar=c.toDataURL('image/jpeg',.85);
+    URL.revokeObjectURL(u);saveProfile();render(true);
+  };
+  im.onerror=()=>{URL.revokeObjectURL(u);toast('Não foi possível usar essa imagem.')};
+  im.src=u;
+};
+/*ENDPROFILE*/
 
 /*MD5*/
 function md5(s){
@@ -192,23 +293,41 @@ async function fetchAll(){
   }
   return got;
 }
-async function sync(manual){
-  if(!cfg)return;
-  toast('Sincronizando…');
+let syncing=false;
+async function sync(manual,quiet){
+  if(!cfg||syncing)return;
+  syncing=true;
+  if(!quiet)toast('Sincronizando…');
   try{
     const got=await fetchAll();
-    const old={};songs.filter(s=>s.src==='server').forEach(s=>{old[s.id]=s});
-    const fresh=got.map(x=>{const n=toSong(x),o=old[n.id];if(o){n.fav=o.fav;n.plays=o.plays;n.last=o.last;n.added=o.added;if(o.dl)n.dl=o.dl}return n});
+    const old=new Map(songs.filter(s=>s.src==='server').map(s=>[s.id,s]));
+    const dirty=[];let added=0;
+    const fresh=got.map(x=>{
+      const n=toSong(x),o=old.get(n.id);
+      if(!o){added++;dirty.push(n);return n}
+      const ks=['title','artist','album','track','duration','coverArt','suffix'];
+      if(ks.some(k=>o[k]!==n[k])){ks.forEach(k=>{o[k]=n[k]});dirty.push(o)}
+      return o;
+    });
     const keep=new Set(fresh.map(s=>s.id));
-    const gone=Object.keys(old).filter(id=>!keep.has(id)&&!old[id].dl);
-    const kept=Object.values(old).filter(o=>!keep.has(o.id)&&o.dl);
-    await tx('songs','readwrite',st=>{fresh.forEach(x=>st.put(x));gone.forEach(id=>st.delete(id))});
+    const gone=[...old.values()].filter(o=>!keep.has(o.id)&&!o.dl);
+    const kept=[...old.values()].filter(o=>!keep.has(o.id)&&o.dl);
+    if(dirty.length||gone.length)await tx('songs','readwrite',st=>{dirty.forEach(x=>st.put(x));gone.forEach(o=>st.delete(o.id))});
     songs=songs.filter(s=>s.src!=='server').concat(fresh,kept);
-    localStorage.setItem('lastSync',String(Date.now()));
-    toast(fresh.length+' músicas do servidor');
-    refresh();
-  }catch(e){toast(manual?'Falha ao sincronizar: '+e.message:'Servidor indisponível')}
+    try{localStorage.setItem('lastSync',String(Date.now()))}catch(e){}
+    if(!quiet)toast(fresh.length+' músicas do servidor');
+    else if(added)toast(added+' música(s) nova(s) do servidor');
+    if(!quiet||added||gone.length)refresh();
+  }catch(e){
+    if(!quiet)toast(manual?'Falha ao sincronizar: '+e.message:'Servidor indisponível');
+  }finally{syncing=false}
 }
+/* sincronização automática: a cada 5 minutos, ao voltar para o app e ao reconectar */
+const autoSync=()=>{if(cfg&&navigator.onLine&&!document.hidden)sync(false,true)};
+setInterval(autoSync,5*60*1000);
+document.addEventListener('visibilitychange',()=>{if(document.hidden)flush();else autoSync()});
+window.addEventListener('pagehide',flush);
+window.addEventListener('online',autoSync);
 async function connect(){
   let url=$('#su').value.trim().replace(/\/+$/,'');
   if(!/^https?:\/\//.test(url))url='http://'+url;
@@ -355,7 +474,7 @@ const backBtn='<button class="back" data-act="back" aria-label="Voltar"><svg vie
 const chips=(list,on,attr)=>list.map(c=>`<button class="chip${on===c?' on':''}" data-${attr}="${c}">${c}</button>`).join('');
 
 function home(){
-  const top='<div class="top"><button class="me" data-go="srv" aria-label="Servidor">M</button>'+chips(['Tudo','Músicas','Álbuns'],chip,'chip')+'</div>';
+  const top='<div class="top">'+avatarBtn()+''+chips(['Tudo','Músicas','Álbuns'],chip,'chip')+'</div>';
   if(!songs.length)return top+empty();
   const al=albums(),favs=songs.some(s=>s.fav);
   const recent=songs.filter(s=>s.last).sort((a,b)=>b.last-a.last);
@@ -434,20 +553,24 @@ function render(keep){
   if(cur.v==='search'){
     m.innerHTML='<h1>Buscar</h1><input type="text" id="q" placeholder="Músicas, álbuns ou artistas" autocomplete="off"><div id="res"></div>';
     $('#q').oninput=e=>doSearch(e.target.value);doSearch('');
-  }else m.innerHTML=cur.v==='home'?home():cur.v==='lib'?lib():cur.v==='srv'?srvView():detail();
+  }else m.innerHTML=(({home,lib,srv:srvView,profile:profileView,stats:statsView,edit:editView,recent:recentView})[cur.v]||detail)();
   m.scrollTop=y;
   ui();
 }
 const refresh=()=>cur.v==='search'?doSearch($('#q').value):render(true);
 
 $('#main').onclick=e=>{
-  const t=e.target.closest('[data-menu],[data-l],[data-go],[data-chip],[data-lib],[data-act]');
+  const t=e.target.closest('[data-menu],[data-l],[data-go],[data-chip],[data-lib],[data-act],[data-sw],[data-per]');
   if(!t)return;
   const d=t.dataset;
   if(d.menu)sheet(d.menu);
   else if(d.l)play(lists[d.l],+d.i);
   else if(d.go)go(d.go,d.k);
   else if(d.chip){chip=d.chip;render()}
+  else if(d.per){per=d.per;render()}
+  else if(d.sw){readName();profile.ac=d.sw;saveProfile();render(true)}
+  else if(d.act==='pickAvatar'){readName();$('#pfile').click()}
+  else if(d.act==='saveProfile'){readName();saveProfile();back();toast('Perfil salvo')}
   else if(d.lib){libChip=d.lib;render()}
   else if(d.act==='back')back();
   else if(d.act==='add')$('#file').click();
@@ -464,7 +587,7 @@ $('#main').onclick=e=>{
 function sheet(id){
   const s=songs.find(x=>x.id===id),sh=$('#sheet');
   if(!s)return;
-  sh.innerHTML=`<div class="box"><b>${esc(s.title)}</b><span class="sub">${esc(s.artist)}</span><button data-s="fav">${s.fav?'Remover das curtidas':'Curtir'}</button>${s.src==='server'&&native?`<button data-s="dl">${s.dl?'Remover download':'Baixar para ouvir offline'}</button>`:''}${s.src==='server'?'':'<button data-s="del" class="red">Remover da biblioteca</button>'}<button data-s="x">Cancelar</button></div>`;
+  sh.innerHTML=`<div class="box"><b>${esc(s.title)}</b><span class="sub">${esc(s.artist)}</span><span class="sub" style="margin-bottom:6px">Ouvida ${s.plays||0}× · ${fmtDur(s.secs||0)} no total</span><button data-s="fav">${s.fav?'Remover das curtidas':'Curtir'}</button>${s.src==='server'&&native?`<button data-s="dl">${s.dl?'Remover download':'Baixar para ouvir offline'}</button>`:''}${s.src==='server'?'':'<button data-s="del" class="red">Remover da biblioteca</button>'}<button data-s="x">Cancelar</button></div>`;
   sh.hidden=false;
   sh.onclick=async e=>{
     const a=e.target.dataset.s;
@@ -510,7 +633,7 @@ $('#file').onchange=async e=>{
 function play(list,i){queue=list;idx=i;load()}
 async function load(){
   const s=queue[idx];if(!s)return;
-  const my=++loadId;
+  const my=++loadId;flush();lastT=0;
   let src;
   if(s.src==='server'){
     if(s.dl)src=Capacitor.convertFileSrc(s.dl.uri);
@@ -579,11 +702,14 @@ function next(auto){
 function prev(){if(audio.currentTime>3||idx<=0)audio.currentTime=0;else{idx--;load()}}
 const toggle=()=>{if(audio.src)audio.paused?audio.play().catch(()=>{}):audio.pause()};
 const icon=()=>{$('#mpp').innerHTML=$('#pp').innerHTML=audio.paused?IC.play:IC.pause};
-audio.onplay=audio.onpause=icon;
-audio.onended=()=>next(true);
+audio.onplay=icon;
+audio.onpause=()=>{icon();flush()};
+audio.onended=()=>{flush();next(true)};
 audio.onerror=()=>{if(audio.getAttribute('src'))toast('Não foi possível tocar essa música.')};
 let seeking=false;
 audio.ontimeupdate=()=>{
+  const t=audio.currentTime,dt=t-lastT;lastT=t;
+  if(!audio.paused&&dt>0&&dt<1.5&&queue[idx])addTime(queue[idx],dt);
   if(!audio.duration)return;
   $('#seek').max=Math.floor(audio.duration);
   if(!seeking)$('#seek').value=Math.floor(audio.currentTime);
@@ -603,10 +729,11 @@ $('#close').onclick=()=>{$('#full').hidden=true;refresh()};
 /* ---------- Início ---------- */
 icon();ctl();
 try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
+applyProfile();
 (async()=>{
   try{songs=await tx('songs','readonly',st=>st.getAll())||[]}catch(e){toast('Não foi possível abrir a biblioteca.')}
   render();
-  if(cfg&&navigator.onLine&&Date.now()-(+localStorage.getItem('lastSync')||0)>6*36e5)sync();
+  autoSync();
 })();
 </script>
 </body>
