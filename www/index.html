@@ -112,6 +112,17 @@ textarea{font:inherit;font-size:13px}
 .msg small{display:block;font-size:10px;opacity:.6;margin-top:2px}
 #cin{position:sticky;bottom:0;display:flex;gap:8px;background:var(--bg);padding:10px 0 4px}
 #cin input{margin:0}
+@media(min-width:900px){
+  #app{display:grid;grid-template-columns:220px 1fr;grid-template-rows:1fr auto}
+  main{grid-column:2;grid-row:1;padding:28px 40px}
+  nav{grid-column:1;grid-row:1;flex-direction:column;justify-content:flex-start;padding:24px 12px;background:#000;gap:4px}
+  nav button{flex-direction:row;justify-content:flex-start;gap:14px;font-size:15px;padding:12px 14px;border-radius:8px}
+  nav button.act{background:var(--hi)}
+  #mini{grid-column:1/-1;grid-row:2;margin:0;border-radius:0;padding:12px 24px}
+  .grid{grid-template-columns:repeat(4,1fr)}
+  .big{flex-basis:180px}
+  .big .art{width:180px;height:180px}
+}
 </style>
 </head>
 <body>
@@ -387,8 +398,10 @@ function md5(s){
 /*ENDMD5*/
 
 /* ---------- Servidor (Navidrome / Subsonic) ---------- */
+const DEFAULT_SERVER={url:'http://100.69.149.114:4533',user:'luizinhoplay',salt:'spz9k2m4',token:'a75506a330228b0509a31efbee07e424'};
 let cfg=null;
 try{cfg=JSON.parse(localStorage.getItem('cfg'))}catch(e){}
+try{if(!cfg&&!localStorage.getItem('nodefault'))cfg=DEFAULT_SERVER}catch(e){}
 const native=!!(window.Capacitor&&Capacitor.isNativePlatform&&Capacitor.isNativePlatform());
 const surl=(ep,p)=>cfg.url+'/rest/'+ep+'?'+new URLSearchParams(Object.assign({u:cfg.user,t:cfg.token,s:cfg.salt,v:'1.16.1',c:'spotziul',f:'json'},p));
 async function api(ep,p){
@@ -470,7 +483,7 @@ async function connect(){
 }
 async function disconnect(){
   if(!confirm('Desconectar do servidor? As músicas baixadas continuam no celular.'))return;
-  try{localStorage.removeItem('cfg');localStorage.removeItem('lastSync')}catch(e){}
+  try{localStorage.removeItem('cfg');localStorage.removeItem('lastSync');localStorage.setItem('nodefault','1')}catch(e){}
   cfg=null;
   const gone=songs.filter(s=>s.src==='server'&&!s.dl).map(s=>s.id);
   await tx('songs','readwrite',st=>{gone.forEach(id=>st.delete(id))});
@@ -858,6 +871,7 @@ $('#rep').onclick=()=>{rep=(rep+1)%3;ctl()};
 $('#fav').onclick=async()=>{const s=queue[idx];if(!s)return;s.fav=!s.fav;favIcon();await save(s)};
 $('#mini').onclick=()=>$('#full').hidden=false;
 $('#close').onclick=()=>{$('#full').hidden=true;refresh()};
+document.addEventListener('keydown',e=>{if(e.code==='Space'&&document.activeElement===document.body){e.preventDefault();toggle()}});
 
 /* ---------- Início ---------- */
 icon();ctl();
