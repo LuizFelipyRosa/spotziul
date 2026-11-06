@@ -1,0 +1,36 @@
+name: Build PC
+on:
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Preparar arquivos
+        shell: bash
+        run: |
+          cp www/index.html desktop/index.html
+          pip install pillow
+          python - <<'PY'
+          from PIL import Image, ImageDraw
+          im = Image.open('icon.png').convert('RGBA')
+          w = im.size[0]; m = int(w * .06)
+          crop = im.crop((m, m, w - m, w - m)).resize((1024, 1024))
+          mask = Image.new('L', (1024, 1024), 0)
+          ImageDraw.Draw(mask).rounded_rectangle((0, 0, 1023, 1023), radius=230, fill=255)
+          out = Image.new('RGBA', (1024, 1024), (0, 0, 0, 0))
+          out.paste(crop, (0, 0), mask)
+          out.save('desktop/icon.png')
+          PY
+      - name: Montar o programa
+        working-directory: desktop
+        run: |
+          npm install
+          npx electron-builder --win --publish never
+      - uses: actions/upload-artifact@v4
+        with:
+          name: spotziul-pc
+          path: desktop/dist/*.exe
