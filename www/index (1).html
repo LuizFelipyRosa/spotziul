@@ -1,0 +1,969 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>spotziul</title>
+<style>
+:root{--bg:#121212;--hi:#2a2a2a;--tx:#fff;--mu:#b3b3b3;--ac:#1ed760;--tint:#3b2a5c}
+*{box-sizing:border-box;margin:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{background:var(--bg);color:var(--tx);font-family:system-ui,-apple-system,Roboto,sans-serif;overflow:hidden}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+svg.f{fill:currentColor;stroke:none}
+#app{height:100%;display:flex;flex-direction:column}
+main{flex:1;overflow-y:auto;padding:calc(14px + env(safe-area-inset-top,0px)) 16px 16px}
+h1{font-size:26px;margin-bottom:12px}
+h2{font-size:22px;margin:26px 0 12px}
+.sub{color:var(--mu);font-size:13px}
+.top{display:flex;align-items:center;gap:10px;margin-bottom:18px;overflow-x:auto}
+.me{flex:0 0 44px;height:44px;border-radius:50%;background:linear-gradient(135deg,#e8590c,#7c3aed);display:grid;place-items:center;font-weight:700;font-size:18px}
+.chip{flex:0 0 auto;padding:10px 18px;border-radius:24px;background:var(--hi);font-size:15px}
+.chip.on{background:var(--ac);color:#000;font-weight:600}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.q{display:flex;align-items:center;background:var(--hi);border-radius:6px;overflow:hidden;height:56px;cursor:pointer}
+.q .art{width:56px;height:56px;flex:none;border-radius:0}
+.q b{padding:0 10px;font-size:13px;line-height:1.25;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.row{display:flex;gap:14px;overflow-x:auto;padding-bottom:6px}
+.big{flex:0 0 150px;cursor:pointer}
+.big .art{width:150px;height:150px}
+.big p{margin-top:8px;font-size:14px;font-weight:600;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.big small{display:block;color:var(--mu);font-size:12px;margin-top:2px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.art{position:relative;display:grid;place-items:center;border-radius:6px;overflow:hidden;color:rgba(255,255,255,.6);font-size:24px;background:var(--c,#333)}
+.art img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.item{display:flex;align-items:center;gap:12px;padding:7px 0;cursor:pointer}
+.item .art{width:48px;height:48px;flex:none}
+.item.r .art{border-radius:50%}
+.item>div{flex:1;min-width:0}
+.item b,.item span{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.item b{font-weight:600;font-size:15px}
+.item span{color:var(--mu);font-size:13px}
+.item.on b{color:var(--ac)}
+.dots{padding:8px 4px;color:var(--mu);font-size:22px;line-height:1}
+input[type=text],input[type=password],textarea{width:100%;padding:13px 14px;border-radius:8px;border:0;background:var(--hi);color:var(--tx);font-size:16px;margin-bottom:12px}
+.btn{background:var(--ac);color:#000;font-weight:700;padding:12px 26px;border-radius:30px}
+.btn.alt{background:var(--hi);color:var(--tx)}
+.acts{display:flex;gap:10px;margin:4px 0 12px}
+.back{padding:0 8px 10px 0}
+.head{display:flex;gap:16px;align-items:flex-end;margin-bottom:12px}
+.head .art{width:130px;height:130px;flex:none}
+.head h1{font-size:22px;margin:0 0 4px}
+.empty{text-align:center;padding:60px 16px}
+.empty h1{font-size:22px}
+.empty .btn{margin-top:18px}
+#mini{display:flex;align-items:center;gap:10px;margin:0 8px 6px;padding:8px 10px;background:var(--tint);border-radius:8px;cursor:pointer;position:relative;overflow:hidden;transition:background .4s}
+#mart .art{width:42px;height:42px;border-radius:4px}
+#mini .t{flex:1;min-width:0}
+#mini b,#mini span{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#mini b{font-size:14px}
+#mini span{font-size:12px;color:rgba(255,255,255,.7)}
+#mpp svg{width:30px;height:30px}
+#mbar{position:absolute;left:10px;right:10px;bottom:2px;height:2px;background:rgba(255,255,255,.25)}
+#mbar i{display:block;height:100%;width:0;background:#fff}
+nav{display:flex;padding-bottom:env(safe-area-inset-bottom,0px);background:linear-gradient(rgba(18,18,18,0),rgba(18,18,18,.96) 35%)}
+nav button{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 0 12px;color:var(--mu);font-size:12px}
+nav button.act{color:var(--tx)}
+#full{position:fixed;inset:0;background:linear-gradient(var(--tint),var(--bg) 78%);display:flex;flex-direction:column;align-items:center;padding:calc(12px + env(safe-area-inset-top,0px)) 26px calc(26px + env(safe-area-inset-bottom,0px));z-index:5}
+#full[hidden],#mini[hidden],#sheet[hidden],#toast[hidden]{display:none}
+#close{align-self:flex-start;padding:6px}
+#fartbox{width:100%;max-width:340px;margin:auto 0 26px}
+#fartbox .art{width:100%;aspect-ratio:1;font-size:90px;border-radius:8px}
+.tt{display:flex;align-items:center;gap:12px;width:100%;max-width:340px}
+.tt>div{flex:1;min-width:0}
+#ft{font-size:21px;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#fa{font-size:15px}
+#fav svg{width:28px;height:28px}
+#seek{width:100%;max-width:340px;margin-top:16px;accent-color:var(--ac)}
+.times{display:flex;justify-content:space-between;width:100%;max-width:340px;color:var(--mu);font-size:12px}
+.ctl{display:flex;align-items:center;justify-content:space-between;width:100%;max-width:340px;margin:12px 0 18px}
+.ctl button{padding:8px;color:var(--mu);display:flex;align-items:center;gap:2px;font-size:12px}
+.ctl .on{color:var(--ac)}
+.ctl .m{color:var(--tx)}
+.ctl .m svg{width:34px;height:34px}
+#pp{width:64px;height:64px;border-radius:50%;background:#fff;color:#000;justify-content:center}
+#pp svg{width:30px;height:30px}
+#sheet{position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:flex-end;z-index:8}
+#sheet .box{width:100%;background:#262626;border-radius:16px 16px 0 0;padding:18px 20px calc(14px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column}
+#sheet button{text-align:left;padding:14px 0;font-size:16px}
+#sheet .red{color:#ff6b6b}
+#toast{position:fixed;left:50%;bottom:calc(120px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:#fff;color:#000;padding:10px 16px;border-radius:20px;font-size:14px;z-index:9;max-width:85%;text-align:center}
+#serr,#uerr{color:#ff6b6b;font-size:14px;min-height:20px;margin-bottom:10px}
+button.me{padding:0;color:#fff;overflow:hidden}
+.me img,.avatar img{width:100%;height:100%;object-fit:cover}
+.pf{display:flex;align-items:center;gap:16px;margin:6px 0 20px}
+.avatar{width:84px;height:84px;border-radius:50%;background:linear-gradient(135deg,#e8590c,#7c3aed);display:grid;place-items:center;font-size:34px;font-weight:700;overflow:hidden;flex:none}
+.menu{display:flex;align-items:center;justify-content:space-between;padding:16px 0;font-size:17px;cursor:pointer;border-bottom:1px solid #222}
+.menu span{color:var(--mu)}
+.sw{display:flex;gap:12px;margin:8px 0 22px}
+.sw button{width:42px;height:42px;border-radius:50%;border:3px solid transparent}
+.sw button.on{border-color:#fff}
+.cols{display:flex;gap:12px;align-items:flex-start}
+.cols>div{flex:1;min-width:0}
+.stat{background:#1f1f1f;border-radius:12px;padding:16px;margin-bottom:12px}
+.stat .sub{margin-bottom:6px}
+.stat b{display:block;font-size:20px;margin-bottom:10px;overflow-wrap:anywhere}
+.stat .num{font-size:54px;font-weight:800;line-height:1}
+.stat .art{width:100%;aspect-ratio:1;font-size:60px}
+.stat.round .art{border-radius:50%}
+textarea{font:inherit;font-size:13px}
+.msg{max-width:80%;padding:8px 12px;border-radius:14px;background:#2a2a2a;margin:6px 0;width:fit-content;overflow-wrap:anywhere}
+.msg.mine{background:var(--ac);color:#000;margin-left:auto}
+.msg small{display:block;font-size:10px;opacity:.6;margin-top:2px}
+#cin{position:sticky;bottom:0;display:flex;gap:8px;background:var(--bg);padding:10px 0 4px}
+#cin input{margin:0}
+.vol{display:flex;align-items:center;gap:10px;width:100%;max-width:340px;margin:0 0 auto}
+.vol input{flex:1;accent-color:var(--ac)}
+#vmute{padding:6px;color:var(--mu)}
+.vol2{display:none;width:110px;accent-color:var(--ac)}
+@media(min-width:900px){
+  #app{display:grid;grid-template-columns:220px 1fr;grid-template-rows:1fr auto}
+  main{grid-column:2;grid-row:1;padding:28px 40px}
+  nav{grid-column:1;grid-row:1;flex-direction:column;justify-content:flex-start;padding:24px 12px;background:#000;gap:4px}
+  nav button{flex-direction:row;justify-content:flex-start;gap:14px;font-size:15px;padding:12px 14px;border-radius:8px}
+  nav button.act{background:var(--hi)}
+  #mini{grid-column:1/-1;grid-row:2;margin:0;border-radius:0;padding:12px 24px}
+  .grid{grid-template-columns:repeat(4,1fr)}
+  .big{flex-basis:180px}
+  .big .art{width:180px;height:180px}
+  .vol2{display:block}
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <main id="main"></main>
+  <div id="mini" hidden>
+    <div id="mart"></div>
+    <div class="t"><b id="mt"></b><span id="ma"></span></div>
+    <button id="mpp" aria-label="Tocar ou pausar"></button>
+    <input type="range" id="vol2" class="vol2" min="0" max="100" value="100" aria-label="Volume"><div id="mbar"><i></i></div>
+  </div>
+  <nav>
+    <button data-tab="home"><svg viewBox="0 0 24 24"><path d="M4 11 12 4l8 7v9h-5v-6H9v6H4z"/></svg>Início</button>
+    <button data-tab="search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>Buscar</button>
+    <button data-tab="lib"><svg viewBox="0 0 24 24"><path d="M5 4v16M10 4v16M15 5l5 14"/></svg>Biblioteca</button>
+    <button data-tab="social"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/><path d="M16 4.500a3.500 3.500 0 0 1 0 7M18 14.500c2 .6 3.500 2.300 3.500 5.500"/></svg>Amigos</button>
+    <button id="addb"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Adicionar</button>
+  </nav>
+</div>
+<div id="full" hidden>
+  <button id="close" aria-label="Fechar"><svg viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></button>
+  <div id="fartbox"></div>
+  <div class="tt"><div><h2 id="ft"></h2><p class="sub" id="fa"></p></div><button id="fav" aria-label="Curtir"></button></div>
+  <input type="range" id="seek" min="0" max="100" value="0" step="1">
+  <div class="times"><span id="cur">0:00</span><span id="dur">0:00</span></div>
+  <div class="ctl">
+    <button id="shuf" aria-label="Aleatório"></button>
+    <button id="prev" class="m" aria-label="Anterior"></button>
+    <button id="pp" aria-label="Tocar ou pausar"></button>
+    <button id="next" class="m" aria-label="Próxima"></button>
+    <button id="rep" aria-label="Repetir"></button>
+  </div>
+  <div class="vol"><button id="vmute" aria-label="Silenciar"></button><input type="range" id="vol" min="0" max="100" value="100" aria-label="Volume"></div>
+</div>
+<div id="sheet" hidden></div>
+<div id="toast" hidden></div>
+<input type="file" id="file" accept="audio/*" multiple hidden>
+<input type="file" id="pfile" accept="image/*" hidden>
+<script>
+const $=s=>document.querySelector(s);
+const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const fmt=s=>{s=Math.floor(s||0);return Math.floor(s/60)+':'+String(s%60).padStart(2,'0')};
+const norm=s=>String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
+const hue=s=>{let h=0;for(const c of String(s))h=(h*31+c.charCodeAt(0))%360;return h};
+const byTitle=(a,b)=>norm(a.title).localeCompare(norm(b.title));
+
+/*PROFILE*/
+let profile={name:'',avatar:'',ac:'#1ed760'};
+try{Object.assign(profile,JSON.parse(localStorage.getItem('profile'))||{})}catch(e){}
+const applyProfile=()=>document.documentElement.style.setProperty('--ac',profile.ac||'#1ed760');
+const saveProfile=()=>{try{localStorage.setItem('profile',JSON.stringify(profile))}catch(e){}applyProfile()};
+const COLORS=['#1ed760','#3ea6ff','#ff9f1a','#ff5c9a','#b388ff'];
+let per='Semana',lastT=0,pendSecs=0,tracked=null,STATS={};
+try{STATS=JSON.parse(localStorage.getItem('stats'))||{}}catch(e){}
+const dayKey=d=>{d=d||new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
+const fmtDur=x=>{x=Math.round(x||0);if(x<60)return x+' s';const m=Math.round(x/60);if(m<60)return m+' min';return Math.floor(m/60)+' h '+String(m%60).padStart(2,'0')+' min'};
+function addTime(s,d){
+  tracked=s;s.secs=(s.secs||0)+d;
+  const k=dayKey(),day=STATS[k]||(STATS[k]={});
+  day[s.id]=(day[s.id]||0)+d;
+  pendSecs+=d;
+  if(pendSecs>=20)flush();
+}
+function flush(){
+  if(!pendSecs)return;
+  pendSecs=0;
+  try{
+    const lim=dayKey(new Date(Date.now()-400*864e5));
+    Object.keys(STATS).forEach(k=>{if(k<lim)delete STATS[k]});
+    localStorage.setItem('stats',JSON.stringify(STATS,(k,v)=>typeof v==='number'?Math.round(v):v));
+  }catch(e){}
+  if(tracked)save(tracked);
+}
+function period(){
+  const days=per==='Semana'?7:per==='Mês'?30:0;
+  const lim=days?dayKey(new Date(Date.now()-(days-1)*864e5)):'';
+  const by={};
+  Object.keys(STATS).forEach(k=>{if(k>=lim)Object.keys(STATS[k]).forEach(id=>{by[id]=(by[id]||0)+STATS[k][id]})});
+  return by;
+}
+const avatarInner=()=>profile.avatar?`<img src="${profile.avatar}" alt="">`:esc((profile.name||'M').trim().charAt(0).toUpperCase()||'M');
+const avatarBtn=()=>`<button class="me" data-go="profile" aria-label="Perfil">${avatarInner()}</button>`;
+function statsView(){
+  const by=period(),byId=new Map(songs.map(s=>[s.id,s]));
+  let total=0;const byArt={},byAlb={},sg=[];
+  Object.keys(by).forEach(id=>{
+    const v=by[id],s=byId.get(id);
+    total+=v;if(!s)return;
+    sg.push([s,v]);
+    const a=byArt[s.artist]||(byArt[s.artist]={n:s.artist,v:0,s});a.v+=v;
+    const k=s.album+'|'+s.artist,b=byAlb[k]||(byAlb[k]={n:s.album,v:0,s});b.v+=v;
+  });
+  sg.sort((x,y)=>y[1]-x[1]);
+  const ta=Object.values(byArt).sort((x,y)=>y.v-x.v)[0],tb=Object.values(byAlb).sort((x,y)=>y.v-x.v)[0],ts=sg[0];
+  let h=backBtn+'<h1>Estatísticas musicais</h1><div class="top">'+chips(['Semana','Mês','Tudo'],per,'per')+'</div>';
+  if(!total)return h+'<p class="sub">Ainda não há nada por aqui. Ouça algumas músicas e volte para ver seus números.</p>';
+  const left=`<div class="stat"><div class="sub">Minutos ouvidos</div><div class="num">${Math.round(total/60)}</div></div>`+(ta?`<div class="stat round"><div class="sub">Artista mais ouvido</div><b>${esc(ta.n)}</b>${art(ta.s)}</div>`:'');
+  const right=(ts?`<div class="stat"><div class="sub">Música mais ouvida</div><b>${esc(ts[0].title)}</b>${art(ts[0])}<div class="sub" style="margin:8px 0 0">${fmtDur(ts[1])}</div></div>`:'')+(tb?`<div class="stat"><div class="sub">Álbum mais ouvido</div><b>${esc(tb.n)}</b>${art(tb.s)}</div>`:'');
+  const top=L('l',sg.slice(0,15).map(x=>x[0]));
+  return h+`<div class="cols"><div>${left}</div><div>${right}</div></div><h2>Mais ouvidas</h2>`+sg.slice(0,15).map((x,i)=>`<div class="item" data-l="l" data-i="${i}">${art(x[0])}<div><b>${esc(x[0].title)}</b><span>${esc(x[0].artist)} · ${fmtDur(x[1])}</span></div></div>`).join('');
+}
+function recentView(){
+  const list=L('l',songs.filter(s=>s.last).sort((a,b)=>b.last-a.last).slice(0,50));
+  return backBtn+'<h1>Recentes</h1>'+(list.length?list.map((s,i)=>row(s,i,'l')).join(''):'<p class="sub">Você ainda não tocou nada.</p>');
+}
+function profileView(){
+  const total=Object.keys(STATS).reduce((t,k)=>t+Object.keys(STATS[k]).reduce((a,id)=>a+STATS[k][id],0),0);
+  return backBtn+`<div class="pf"><div class="avatar">${avatarInner()}</div><div><h1 style="margin:0 0 4px">${esc(profile.name||'Seu nome')}</h1><span class="sub">${songs.length} músicas · ${fmtDur(total)} ouvidos</span></div></div>`+
+    `<div class="menu" data-go="edit">Editar perfil<span>›</span></div><div class="menu" data-go="stats">Estatísticas musicais<span>›</span></div><div class="menu" data-go="recent">Recentes<span>›</span></div><div class="menu" data-go="srv">Servidor<span>${cfg?'Conectado ›':'›'}</span></div>`;
+}
+function editView(){
+  return backBtn+'<h1>Editar perfil</h1><div class="pf"><div class="avatar" data-act="pickAvatar" style="cursor:pointer">'+avatarInner()+'</div><span class="sub">Toque na foto para trocar</span></div><input type="text" id="pn" maxlength="30" placeholder="Seu nome" value="'+esc(profile.name)+'" autocomplete="off"><h2>Cor do app</h2><div class="sw">'+COLORS.map(c=>`<button data-sw="${c}" class="${profile.ac===c?'on':''}" style="background:${c}" aria-label="Cor"></button>`).join('')+'</div><button class="btn" data-act="saveProfile">Salvar</button>';
+}
+const readName=()=>{const n=$('#pn');if(n)profile.name=n.value.trim()};
+$('#pfile').onchange=e=>{
+  const f=e.target.files[0];e.target.value='';
+  if(!f)return;
+  const im=new Image(),u=URL.createObjectURL(f);
+  im.onload=()=>{
+    const c=document.createElement('canvas');c.width=c.height=256;
+    const m=Math.min(im.width,im.height);
+    c.getContext('2d').drawImage(im,(im.width-m)/2,(im.height-m)/2,m,m,0,0,256,256);
+    profile.avatar=c.toDataURL('image/jpeg',.85);
+    URL.revokeObjectURL(u);saveProfile();render(true);
+  };
+  im.onerror=()=>{URL.revokeObjectURL(u);toast('Não foi possível usar essa imagem.')};
+  im.src=u;
+};
+/*ENDPROFILE*/
+
+/*SOCIAL*/
+let db=null,me=null,sstate=localStorage.getItem('fbcfg')?'loading':'nocfg',serr='',initP=null,myF={},U={},P={},R=[],unsubs=[],chatId='';
+const watched=new Set();
+const FBU='https://www.gstatic.com/firebasejs/10.12.2/firebase-';
+const loadJs=u=>new Promise((ok,no)=>{const e=document.createElement('script');e.src=u;e.onload=ok;e.onerror=()=>no(new Error('Sem internet'));document.head.appendChild(e)});
+const TS=()=>firebase.database.ServerValue.TIMESTAMP;
+function parseCfg(t){const c={};String(t).replace(/(\w+)\s*:\s*["']([^"']+)["']/g,(m,k,v)=>{c[k]=v});return c}
+function socialInit(){
+  return initP||(initP=(async()=>{
+    try{
+      sstate='loading';
+      const c=JSON.parse(localStorage.getItem('fbcfg'));
+      if(!window.firebase){for(const x of ['app','auth','database'])await loadJs(FBU+x+'-compat.js')}
+      if(!firebase.apps.length)firebase.initializeApp(c);
+      db=firebase.database();
+      const au=firebase.auth();
+      const u=(await new Promise((ok,no)=>{const off=au.onAuthStateChanged(x=>{off();ok(x)},no)}))||(await au.signInAnonymously()).user;
+      const n=(await db.ref('users/'+u.uid+'/name').once('value')).val();
+      me={uid:u.uid,name:n};
+      if(n){sstate='ready';presence()}else sstate='noname';
+    }catch(e){sstate='error';serr=e.message||String(e)}
+    initP=null;
+    if(cur.v==='social')render();
+  })());
+}
+function presence(){
+  const r=db.ref('presence/'+me.uid);
+  db.ref('.info/connected').on('value',x=>{if(x.val())r.onDisconnect().set({online:false,last:TS()}).then(()=>r.set({online:true,last:TS()}))});
+}
+function watch(id){
+  if(watched.has(id))return;watched.add(id);
+  db.ref('users/'+id+'/name').on('value',x=>{U[id]=x.val();drawF();drawR()});
+  db.ref('presence/'+id+'/online').on('value',x=>{P[id]=!!x.val();drawF();drawR()});
+}
+const dot=on=>`<i style="display:inline-block;width:9px;height:9px;border-radius:50%;background:${on?'var(--ac)':'#555'};margin-right:6px"></i>`;
+const fbtn=id=>`<button class="btn${myF[id]?' alt':''}" style="padding:8px 14px;font-size:13px" data-fol="${id}">${myF[id]?'Seguindo':'Seguir'}</button>`;
+const urow=(id,n)=>`<div class="item" data-chat="${id}" data-n="${esc(n)}"><div class="avatar" style="flex:none;width:48px;height:48px;font-size:20px">${esc(String(n||'?').charAt(0).toUpperCase())}</div><div><b>@${esc(n)}</b><span>${dot(P[id])}${P[id]?'Online':'Offline'}</span></div>${fbtn(id)}</div>`;
+function drawF(){const e=$('#sfr');if(!e)return;const ids=Object.keys(myF);e.innerHTML=ids.length?ids.map(id=>urow(id,U[id]||'…')).join(''):'<p class="sub">Você ainda não segue ninguém. Busque alguém pelo nome acima.</p>'}
+function drawR(){const e=$('#sres');if(!e)return;e.innerHTML=R.map(x=>urow(x[0],x[1])).join('')}
+async function find(q){
+  q=q.trim().toLowerCase();
+  if(q.length<2){R=[];drawR();return}
+  try{
+    const x=await db.ref('usernames').orderByKey().startAt(q).endAt(q+'\uf8ff').limitToFirst(15).once('value');
+    R=[];x.forEach(c=>{if(c.val()!==me.uid)R.push([c.val(),c.key])});
+    R.forEach(r=>watch(r[0]));drawR();
+    if(!R.length)$('#sres').innerHTML='<p class="sub">Ninguém encontrado com esse nome.</p>';
+  }catch(e){toast('Erro na busca: '+e.message)}
+}
+const follow=id=>db.ref('follows/'+me.uid+'/'+id)[myF[id]?'remove':'set'](true);
+function socialView(){
+  const h='<h1>Amigos</h1>';
+  if(sstate==='nocfg')return h+'<p class="sub" style="margin-bottom:12px">Para seguir pessoas e conversar, conecte o app a uma conta online (Firebase). Cole abaixo o código de configuração.</p><textarea id="fbc" rows="8" placeholder="const firebaseConfig = { ... }"></textarea><div id="uerr"></div><button class="btn" data-act="ssave">Salvar e conectar</button>';
+  if(sstate==='loading')return h+'<p class="sub">Conectando…</p>';
+  if(sstate==='error')return h+`<p class="sub">Não foi possível conectar: ${esc(serr)}</p><div class="acts"><button class="btn" data-act="sretry">Tentar de novo</button><button class="btn alt" data-act="sreset">Trocar configuração</button></div>`;
+  if(sstate==='noname')return h+'<p class="sub" style="margin-bottom:12px">Escolha seu nome de usuário. Ele é único e as pessoas vão te achar por ele.</p><input type="text" id="unm" maxlength="20" placeholder="seunome" autocapitalize="off" autocomplete="off" value="'+esc(norm(profile.name).replace(/[^a-z0-9_]/g,''))+'"><div id="uerr"></div><button class="btn" data-act="sclaim">Criar conta</button>';
+  return h+`<p class="sub" style="margin-bottom:12px">Você é @${esc(me.name)}</p><input type="text" id="sq" placeholder="Buscar pessoas pelo nome" autocapitalize="off" autocomplete="off"><div id="sres"></div><h2>Seguindo</h2><div id="sfr"></div><div class="acts" style="margin-top:20px"><button class="btn alt" data-act="sreset">Sair da conta online</button></div>`;
+}
+function socialMount(){
+  if(sstate==='loading'&&!initP)socialInit();
+  if(sstate!=='ready')return;
+  const fr=db.ref('follows/'+me.uid);
+  const cb=fr.on('value',x=>{myF=x.val()||{};Object.keys(myF).forEach(watch);drawF();drawR()});
+  unsubs.push(()=>fr.off('value',cb));
+  let t;$('#sq').oninput=e=>{clearTimeout(t);t=setTimeout(()=>find(e.target.value),350)};
+}
+function saveCfg(){
+  const c=parseCfg($('#fbc').value);
+  if(!c.apiKey||!c.projectId||!c.databaseURL){$('#uerr').textContent='Faltou algo no código: ele precisa ter apiKey, projectId e databaseURL. Crie o Realtime Database antes de registrar o app web.';return}
+  try{localStorage.setItem('fbcfg',JSON.stringify(c))}catch(e){}
+  sstate='loading';render();
+}
+async function claim(){
+  const n=$('#unm').value.trim().toLowerCase(),e=$('#uerr');
+  if(!/^[a-z0-9_]{3,20}$/.test(n)){e.textContent='Use de 3 a 20 letras minúsculas, números ou _ (sem espaço ou acento).';return}
+  e.textContent='Verificando…';
+  try{
+    const r=await db.ref('usernames/'+n).transaction(c=>c===null?me.uid:undefined);
+    if(!r.committed){e.textContent='Esse nome já está em uso. Tente outro.';return}
+    await db.ref('users/'+me.uid).set({name:n});
+    me.name=n;sstate='ready';presence();render();
+  }catch(x){e.textContent='Erro: '+x.message}
+}
+async function sreset(){
+  if(!confirm('Sair da conta online? Seu nome de usuário será liberado.'))return;
+  try{
+    if(db&&me){
+      const u=me.uid;
+      await Promise.all([me.name?db.ref('usernames/'+me.name).remove():null,db.ref('users/'+u).remove(),db.ref('presence/'+u).remove(),db.ref('follows/'+u).remove()]);
+      await firebase.auth().signOut();
+    }
+  }catch(e){}
+  try{localStorage.removeItem('fbcfg')}catch(e){}
+  db=null;me=null;myF={};R=[];sstate='nocfg';render();
+}
+function chatView(){
+  return backBtn+`<h1>@${esc(cur.n||'')}</h1><div id="msgs"></div><div id="cin"><input type="text" id="cmsg" placeholder="Mensagem" maxlength="500" autocomplete="off"><button class="btn" data-act="csend">Enviar</button></div>`;
+}
+function chatMount(){
+  if(!me||!db)return;
+  chatId=[me.uid,cur.k].sort().join('_');
+  const q=db.ref('chats/'+chatId).limitToLast(100);
+  const cb=q.on('child_added',x=>{
+    const m=x.val(),box=$('#msgs');if(!box)return;
+    box.insertAdjacentHTML('beforeend',`<div class="msg${m.from===me.uid?' mine':''}"><div>${esc(m.text)}</div><small>${m.t?new Date(m.t).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}):''}</small></div>`);
+    $('#main').scrollTop=$('#main').scrollHeight;
+  });
+  unsubs.push(()=>q.off('child_added',cb));
+  $('#cmsg').onkeydown=e=>{if(e.key==='Enter')sendMsg()};
+}
+async function sendMsg(){
+  const i=$('#cmsg'),t=(i.value||'').trim();
+  if(!t||!chatId)return;
+  i.value='';
+  try{await db.ref('chats/'+chatId).push({from:me.uid,text:t.slice(0,500),t:TS()})}catch(e){toast('Não foi possível enviar.');i.value=t}
+}
+/*ENDSOCIAL*/
+
+/*PLAYLISTS*/
+let PL = [];
+try { PL = JSON.parse(localStorage.getItem('playlists')) || [] } catch (e) {}
+const savePL = () => { try { localStorage.setItem('playlists', JSON.stringify(PL)) } catch (e) {} };
+const plSongs = p => p.ids.map(id => songs.find(x => x.id === id)).filter(Boolean);
+const PLART = 'linear-gradient(135deg,#3d3d3d,#8e8e8e)';
+function newPL(name) {
+  const p = { id: 'p' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5), name: String(name || '').trim().slice(0, 40) || 'Nova playlist', ids: [] };
+  PL.push(p); savePL(); return p;
+}
+function addToPL(pid, list) {
+  const p = PL.find(x => x.id === pid); if (!p) return 0;
+  let n = 0;
+  list.forEach(x => { if (!p.ids.includes(x.id)) { p.ids.push(x.id); n++ } });
+  savePL(); return n;
+}
+const plLib = () => '<div class="acts"><input type="text" id="npl" maxlength="40" placeholder="Nome da nova playlist" style="margin:0"><button class="btn" data-act="plnew">Criar</button></div>' +
+  (PL.length ? PL.map(p => `<div class="item" data-go="pl" data-k="${p.id}"><div class="avatar" style="flex:none;width:48px;height:48px;font-size:20px;border-radius:6px;background:${PLART}">♫</div><div><b>${esc(p.name)}</b><span>Playlist · ${p.ids.length} músicas</span></div></div>`).join('') : '<p class="sub">Nenhuma playlist ainda. Crie a primeira acima.</p>');
+function plView() {
+  const p = PL.find(x => x.id === cur.k);
+  if (!p) return backBtn + '<p class="sub">Playlist não encontrada.</p>';
+  const list = L('l', plSongs(p));
+  return backBtn + `<div class="head">${list[0] ? art(list[0]) : mk(PLART, '♫')}<div><h1>${esc(p.name)}</h1><span class="sub">${list.length} músicas</span></div></div>` +
+    '<div class="acts">' + (list.length ? '<button class="btn" data-act="playall">▶ Tocar</button><button class="btn alt" data-act="shuffle">Aleatório</button>' : '') + '</div>' +
+    `<input type="text" id="pln" maxlength="40" value="${esc(p.name)}"><div class="acts"><button class="btn alt" data-act="plren">Salvar nome</button><button class="btn alt" data-act="pldel">Excluir playlist</button></div>` +
+    (list.length ? list.map((x, i) => row(x, i, 'l')).join('') : '<p class="sub">Vazia. Toque nos três pontinhos de uma música e escolha “Adicionar à playlist”.</p>');
+}
+function pickPL(list, title) {
+  const sh = $('#sheet');
+  sh.innerHTML = `<div class="box"><b>Adicionar à playlist</b><span class="sub">${esc(title)}</span>${PL.map(p => `<button data-s="${p.id}">${esc(p.name)} <span class="sub">(${p.ids.length})</span></button>`).join('')}<input type="text" id="npn" maxlength="40" placeholder="Nova playlist" style="margin:8px 0"><button data-s="__new" class="btn" style="text-align:center;padding:12px">Criar e adicionar</button><button data-s="x">Cancelar</button></div>`;
+  sh.hidden = false;
+  sh.onclick = e => {
+    const a = e.target.closest('[data-s]');
+    if (!a && e.target !== sh) return;
+    const k = a && a.dataset.s;
+    if (k === '__new') {
+      const n = $('#npn').value.trim();
+      if (!n) { toast('Digite um nome.'); return }
+      const p = newPL(n); sh.hidden = true;
+      toast(addToPL(p.id, list) + ' música(s) em “' + p.name + '”'); refresh(); return;
+    }
+    sh.hidden = true;
+    if (k && k !== 'x') {
+      const n = addToPL(k, list), p = PL.find(x => x.id === k);
+      toast(n + ' música(s) adicionada(s) a “' + p.name + '”'); refresh();
+    }
+  };
+}
+const VI = {
+  vol: '<svg viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16 9a4 4 0 0 1 0 6M18.5 6.5a8 8 0 0 1 0 11"/></svg>',
+  mute: '<svg viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="m17 9 5 6M22 9l-5 6"/></svg>'
+};
+let vol = 1, lastVol = 1;
+try { const v = parseFloat(localStorage.getItem('vol')); if (v >= 0 && v <= 1) vol = v } catch (e) {}
+function setVol(v) {
+  vol = Math.max(0, Math.min(1, +v || 0));
+  if (vol > 0) lastVol = vol;
+  audio.volume = vol;
+  $('#vol').value = Math.round(vol * 100); $('#vol2').value = Math.round(vol * 100);
+  $('#vmute').innerHTML = vol === 0 ? VI.mute : VI.vol;
+  try { localStorage.setItem('vol', String(vol)) } catch (e) {}
+}
+/*ENDPLAYLISTS*/
+
+/*MD5*/
+function md5(s){
+  const k=new Int32Array(64),r=[7,12,17,22,5,9,14,20,4,11,16,23,6,10,15,21];
+  for(let i=0;i<64;i++)k[i]=Math.floor(Math.abs(Math.sin(i+1))*4294967296)|0;
+  const b=new TextEncoder().encode(s),n=b.length,len=((n+8>>6)+1)<<4,w=new Int32Array(len);
+  for(let i=0;i<n;i++)w[i>>2]|=b[i]<<((i%4)*8);
+  w[n>>2]|=0x80<<((n%4)*8);w[len-2]=n*8;
+  let a0=0x67452301,b0=0xefcdab89|0,c0=0x98badcfe|0,d0=0x10325476;
+  for(let o=0;o<len;o+=16){
+    let A=a0,B=b0,C=c0,D=d0;
+    for(let i=0;i<64;i++){
+      let f,g;
+      if(i<16){f=(B&C)|(~B&D);g=i}
+      else if(i<32){f=(D&B)|(~D&C);g=(5*i+1)%16}
+      else if(i<48){f=B^C^D;g=(3*i+5)%16}
+      else{f=C^(B|~D);g=(7*i)%16}
+      const t=D;D=C;C=B;
+      const x=(A+f+k[i]+w[o+g])|0,sh=r[(i>>4)*4+(i%4)];
+      B=(B+((x<<sh)|(x>>>(32-sh))))|0;A=t;
+    }
+    a0=(a0+A)|0;b0=(b0+B)|0;c0=(c0+C)|0;d0=(d0+D)|0;
+  }
+  const h=v=>[0,8,16,24].map(q=>((v>>>q)&255).toString(16).padStart(2,'0')).join('');
+  return h(a0)+h(b0)+h(c0)+h(d0);
+}
+/*ENDMD5*/
+
+/* ---------- Servidor (Navidrome / Subsonic) ---------- */
+const DEFAULT_SERVER={url:'http://100.69.149.114:4533',user:'luizinhoplay',salt:'spz9k2m4',token:'a75506a330228b0509a31efbee07e424'};
+let cfg=null;
+try{cfg=JSON.parse(localStorage.getItem('cfg'))}catch(e){}
+try{if(!cfg&&!localStorage.getItem('nodefault'))cfg=DEFAULT_SERVER}catch(e){}
+const native=!!(window.Capacitor&&Capacitor.isNativePlatform&&Capacitor.isNativePlatform());
+const surl=(ep,p)=>cfg.url+'/rest/'+ep+'?'+new URLSearchParams(Object.assign({u:cfg.user,t:cfg.token,s:cfg.salt,v:'1.16.1',c:'spotziul',f:'json'},p));
+async function api(ep,p){
+  const r=await fetch(surl(ep,p));
+  const j=(await r.json())['subsonic-response'];
+  if(j.status!=='ok')throw new Error(j.error?j.error.message:'Erro no servidor');
+  return j;
+}
+const toSong=s=>({id:'srv:'+s.id,sid:s.id,src:'server',title:s.title||'Sem título',artist:s.artist||'Artista desconhecido',album:s.album||'Sem álbum',track:s.track||0,duration:s.duration||0,coverArt:s.coverArt||null,suffix:s.suffix||'mp3',cover:null,added:Date.parse(s.created)||Date.now(),plays:0,last:0,fav:false});
+async function fetchAll(){
+  let got=[];
+  for(let o=0;;o+=500){
+    const r=await api('search3',{query:'',songCount:500,songOffset:o,artistCount:0,albumCount:0});
+    const l=(r.searchResult3&&r.searchResult3.song)||[];
+    got=got.concat(l);
+    if(l.length<500)break;
+  }
+  if(got.length)return got;
+  for(let o=0;;o+=100){
+    const r=await api('getAlbumList2',{type:'alphabeticalByName',size:100,offset:o});
+    const al=(r.albumList2&&r.albumList2.album)||[];
+    for(let i=0;i<al.length;i+=8){
+      const rs=await Promise.all(al.slice(i,i+8).map(a=>api('getAlbum',{id:a.id})));
+      rs.forEach(x=>{got=got.concat(x.album.song||[])});
+    }
+    if(al.length<100)break;
+  }
+  return got;
+}
+let syncing=false;
+async function sync(manual,quiet){
+  if(!cfg||syncing)return;
+  syncing=true;
+  if(!quiet)toast('Sincronizando…');
+  try{
+    const got=await fetchAll();
+    const old=new Map(songs.filter(s=>s.src==='server').map(s=>[s.id,s]));
+    const dirty=[];let added=0;
+    const fresh=got.map(x=>{
+      const n=toSong(x),o=old.get(n.id);
+      if(!o){added++;dirty.push(n);return n}
+      const ks=['title','artist','album','track','duration','coverArt','suffix'];
+      if(ks.some(k=>o[k]!==n[k])){ks.forEach(k=>{o[k]=n[k]});dirty.push(o)}
+      return o;
+    });
+    const keep=new Set(fresh.map(s=>s.id));
+    const gone=[...old.values()].filter(o=>!keep.has(o.id)&&!o.dl);
+    const kept=[...old.values()].filter(o=>!keep.has(o.id)&&o.dl);
+    if(dirty.length||gone.length)await tx('songs','readwrite',st=>{dirty.forEach(x=>st.put(x));gone.forEach(o=>st.delete(o.id))});
+    songs=songs.filter(s=>s.src!=='server').concat(fresh,kept);
+    try{localStorage.setItem('lastSync',String(Date.now()))}catch(e){}
+    if(!quiet)toast(fresh.length+' músicas do servidor');
+    else if(added)toast(added+' música(s) nova(s) do servidor');
+    if(!quiet||added||gone.length)refresh();
+  }catch(e){
+    if(!quiet)toast(manual?'Falha ao sincronizar: '+e.message:'Servidor indisponível');
+  }finally{syncing=false}
+}
+/* sincronização automática: a cada 5 minutos, ao voltar para o app e ao reconectar */
+const autoSync=()=>{if(cfg&&navigator.onLine&&!document.hidden)sync(false,true)};
+setInterval(autoSync,5*60*1000);
+document.addEventListener('visibilitychange',()=>{if(document.hidden)flush();else autoSync()});
+window.addEventListener('pagehide',flush);
+window.addEventListener('online',autoSync);
+async function connect(){
+  let url=$('#su').value.trim().replace(/\/+$/,'');
+  if(!/^https?:\/\//.test(url))url='http://'+url;
+  const salt=Math.random().toString(36).slice(2,10),old=cfg;
+  cfg={url,user:$('#sn').value.trim(),salt,token:md5($('#sp').value+salt)};
+  $('#serr').textContent='Conectando…';
+  try{
+    await api('ping');
+    localStorage.setItem('cfg',JSON.stringify(cfg));
+    await sync(true);
+  }catch(e){
+    cfg=old;
+    $('#serr').textContent='Não foi possível conectar. Confira endereço, usuário e senha, e se o servidor está ligado. ('+e.message+')';
+  }
+}
+async function disconnect(){
+  if(!confirm('Desconectar do servidor? As músicas baixadas continuam no celular.'))return;
+  try{localStorage.removeItem('cfg');localStorage.removeItem('lastSync');localStorage.setItem('nodefault','1')}catch(e){}
+  cfg=null;
+  const gone=songs.filter(s=>s.src==='server'&&!s.dl).map(s=>s.id);
+  await tx('songs','readwrite',st=>{gone.forEach(id=>st.delete(id))});
+  songs=songs.filter(s=>!(s.src==='server'&&!s.dl));
+  const c=queue[idx];
+  if(c&&c.src==='server'&&!c.dl){audio.pause();audio.removeAttribute('src');queue=[];idx=-1;$('#mini').hidden=true;$('#full').hidden=true}
+  render();
+}
+async function download(s,quiet){
+  const say=t=>{if(!quiet)toast(t)};
+  if(!native)return toast('Downloads só funcionam no app instalado.');
+  const Fs=Capacitor.Plugins.Filesystem;
+  if(s.dl){
+    try{await Fs.deleteFile({path:s.dl.path,directory:'DATA'})}catch(e){}
+    delete s.dl;await save(s);return say('Download removido');
+  }
+  if(!cfg)return toast('Conecte ao servidor para baixar.');
+  say('Baixando '+s.title+'…');
+  try{
+    const path='music/'+s.sid+'.'+(s.suffix||'mp3');
+    await Fs.downloadFile({url:surl('download',{id:s.sid}),path,directory:'DATA',recursive:true});
+    s.dl={path,uri:(await Fs.getUri({path,directory:'DATA'})).uri};
+    await save(s);say('Baixada: '+s.title);
+  }catch(e){toast('Falha ao baixar: '+e.message)}
+}
+async function dlMany(list){
+  const l=list.filter(s=>s.src==='server'&&!s.dl);
+  for(let i=0;i<l.length;i++){toast('Baixando '+(i+1)+' de '+l.length+'…');await download(l[i],true)}
+  if(l.length)toast(l.length+' música(s) baixada(s)');
+  refresh();
+}
+
+/* ---------- Armazenamento (IndexedDB) ---------- */
+const DB=new Promise((res,rej)=>{
+  const r=indexedDB.open('meuplayer',1);
+  r.onupgradeneeded=()=>{r.result.createObjectStore('songs',{keyPath:'id'});r.result.createObjectStore('files')};
+  r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error);
+});
+const tx=async(st,mode,fn)=>{
+  const db=await DB;
+  return new Promise((res,rej)=>{
+    const t=db.transaction(st,mode);const rq=fn(t.objectStore(st));
+    t.oncomplete=()=>res(rq&&rq.result);t.onerror=t.onabort=()=>rej(t.error);
+  });
+};
+const save=s=>tx('songs','readwrite',st=>st.put(s));
+
+/* ---------- Leitura de tags ID3 (nome, artista, álbum, capa) ---------- */
+/*TAGS*/
+const txt=d=>{const e=d[0];const l=e===0?'iso-8859-1':e===3?'utf-8':(e===2||(d[1]===0xFE&&d[2]===0xFF))?'utf-16be':'utf-16le';return new TextDecoder(l).decode(d.subarray(1)).replace(/\0+$/,'').replace(/^\uFEFF/,'').trim()};
+async function readTags(f){
+  const o={};
+  try{
+    const h=new Uint8Array(await f.slice(0,10).arrayBuffer());
+    if(h[0]!==0x49||h[1]!==0x44||h[2]!==0x33||h[3]<3)return o;
+    const ver=h[3],total=(h[6]<<21)|(h[7]<<14)|(h[8]<<7)|h[9];
+    const b=new Uint8Array(await f.slice(10,10+Math.min(total,12e6)).arrayBuffer());
+    let p=0;
+    while(p+10<=b.length){
+      const id=String.fromCharCode(b[p],b[p+1],b[p+2],b[p+3]);
+      if(!/^[A-Z0-9]{4}$/.test(id))break;
+      const sz=ver===4?(b[p+4]<<21)|(b[p+5]<<14)|(b[p+6]<<7)|b[p+7]:b[p+4]*16777216+(b[p+5]<<16)+(b[p+6]<<8)+b[p+7];
+      const d=b.subarray(p+10,p+10+sz);p+=10+sz;
+      if(!d.length)continue;
+      if(id==='TIT2')o.title=txt(d);
+      else if(id==='TPE1')o.artist=txt(d);
+      else if(id==='TALB')o.album=txt(d);
+      else if(id==='TRCK')o.track=parseInt(txt(d))||0;
+      else if(id==='APIC'&&!o.cover){
+        let q=1;while(q<d.length&&d[q])q++;
+        const mime=String.fromCharCode(...d.subarray(1,q));q+=2;
+        if(d[0]===1||d[0]===2){while(q+1<d.length&&(d[q]||d[q+1]))q+=2;q+=2}else{while(q<d.length&&d[q])q++;q++}
+        o.cover=new Blob([d.subarray(q)],{type:mime.indexOf('/')>0?mime:'image/jpeg'});
+      }
+    }
+  }catch(e){}
+  return o;
+}
+/*ENDTAGS*/
+const getDur=f=>new Promise(r=>{
+  const a=new Audio(),u=URL.createObjectURL(f);
+  a.preload='metadata';
+  a.onloadedmetadata=()=>{r(isFinite(a.duration)?a.duration:0);URL.revokeObjectURL(u)};
+  a.onerror=()=>{r(0);URL.revokeObjectURL(u)};
+  a.src=u;
+});
+
+/* ---------- Estado ---------- */
+let songs=[],queue=[],idx=-1,lists={},cur={v:'home'},hist=[],root='home',chip='Tudo',libChip='Músicas',shuf=false,rep=0,curUrl='',loadId=0,tt;
+const L=(n,a)=>(lists[n]=a);
+const audio=new Audio();
+const urls={};
+const cu=s=>s.cover?(urls[s.id]||(urls[s.id]=URL.createObjectURL(s.cover))):(s.coverArt&&cfg?surl('getCoverArt',{id:s.coverArt,size:300}):'');
+const art=s=>`<span class="art" style="--c:hsl(${hue(s.album||s.title)},40%,28%)">♪${cu(s)?`<img loading="lazy" src="${cu(s)}" alt="" onerror="this.remove()">`:''}</span>`;
+const mk=(c,b)=>`<span class="art" style="--c:${c}">${b}</span>`;
+
+const IC={
+  play:'<svg class="f" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>',
+  pause:'<svg class="f" viewBox="0 0 24 24"><path d="M7 5h4v14H7zM13 5h4v14h-4z"/></svg>',
+  next:'<svg class="f" viewBox="0 0 24 24"><path d="M6 5l9 7-9 7zM17 5h2v14h-2z"/></svg>',
+  prev:'<svg class="f" viewBox="0 0 24 24"><path d="M18 5l-9 7 9 7zM5 5h2v14H5z"/></svg>',
+  shuf:'<svg viewBox="0 0 24 24"><path d="M16 3h5v5M4 20 21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg>',
+  rep:'<svg viewBox="0 0 24 24"><path d="m17 2 4 4-4 4"/><path d="M3 11V9a3 3 0 0 1 3-3h15"/><path d="m7 22-4-4 4-4"/><path d="M21 13v2a3 3 0 0 1-3 3H3"/></svg>',
+  heart:f=>`<svg viewBox="0 0 24 24" style="${f?'fill:var(--ac);stroke:var(--ac)':''}"><path d="M12 20s-7-4.500-7-10a4 4 0 0 1 7-2.500A4 4 0 0 1 19 10c0 5.500-7 10-7 10z"/></svg>`
+};
+$('#prev').innerHTML=IC.prev;$('#next').innerHTML=IC.next;$('#shuf').innerHTML=IC.shuf;
+
+/* ---------- Navegação ---------- */
+const tab=v=>{root=v;hist=[];cur={v};render()};
+const go=(v,k,n)=>{hist.push(cur);cur={v,k,n};render()};
+const back=()=>{cur=hist.pop()||{v:root};render()};
+document.querySelectorAll('nav [data-tab]').forEach(b=>b.onclick=()=>tab(b.dataset.tab));
+$('#addb').onclick=()=>$('#file').click();
+
+/* ---------- Telas ---------- */
+function albums(){
+  const m={};
+  songs.forEach(s=>{const k=s.album+'|'+s.artist;(m[k]=m[k]||{key:k,name:s.album,artist:s.artist,songs:[]}).songs.push(s)});
+  return Object.values(m).sort((a,b)=>norm(a.name).localeCompare(norm(b.name)));
+}
+const alArt=a=>a.songs.find(s=>s.cover)||a.songs[0];
+const alRow=a=>`<div class="item" data-go="album" data-k="${esc(a.key)}">${art(alArt(a))}<div><b>${esc(a.name)}</b><span>Álbum · ${esc(a.artist)}</span></div></div>`;
+const row=(s,i,l)=>`<div class="item${queue[idx]&&queue[idx].id===s.id?' on':''}" data-l="${l}" data-i="${i}">${art(s)}<div><b>${esc(s.title)}</b><span>${s.dl?'⬇ ':''}${esc(s.artist)}${s.duration?' · '+fmt(s.duration):''}</span></div><button class="dots" data-menu="${esc(s.id)}" aria-label="Mais opções">⋮</button></div>`;
+const empty=()=>'<div class="empty"><h1>Sua biblioteca está vazia</h1><p class="sub">Adicione músicas do celular ou conecte ao seu servidor para começar a ouvir.</p><div class="acts" style="justify-content:center;flex-wrap:wrap"><button class="btn" data-act="add">Adicionar do celular</button><button class="btn alt" data-act="srv">Conectar ao servidor</button></div></div>';
+const backBtn='<button class="back" data-act="back" aria-label="Voltar"><svg viewBox="0 0 24 24"><path d="m15 6-6 6 6 6"/></svg></button>';
+const chips=(list,on,attr)=>list.map(c=>`<button class="chip${on===c?' on':''}" data-${attr}="${c}">${c}</button>`).join('');
+
+function home(){
+  const top='<div class="top">'+avatarBtn()+''+chips(['Tudo','Músicas','Álbuns'],chip,'chip')+'</div>';
+  if(!songs.length)return top+empty();
+  const al=albums(),favs=songs.some(s=>s.fav);
+  const recent=songs.filter(s=>s.last).sort((a,b)=>b.last-a.last);
+  const added=[...songs].sort((a,b)=>b.added-a.added);
+  const albQ=a=>`<div class="q" data-go="album" data-k="${esc(a.key)}">${art(alArt(a))}<b>${esc(a.name)}</b></div>`;
+  let quick;
+  if(chip==='Músicas'){
+    quick=L('q',[...songs].sort((a,b)=>(b.plays||0)-(a.plays||0)||b.added-a.added).slice(0,8)).map((s,i)=>`<div class="q" data-l="q" data-i="${i}">${art(s)}<b>${esc(s.title)}</b></div>`);
+  }else{
+    quick=[];
+    if(chip==='Tudo'){
+      if(favs)quick.push(`<div class="q" data-go="favs">${mk('linear-gradient(135deg,#4500e5,#a8c0ff)','♥')}<b>Músicas curtidas</b></div>`);
+      quick.push(`<div class="q" data-go="all">${mk('linear-gradient(135deg,#3d3d3d,#8e8e8e)','♫')}<b>Todas as músicas</b></div>`);
+    }
+    if(chip==='Tudo')PL.slice(0,4).forEach(p=>quick.push(`<div class="q" data-go="pl" data-k="${p.id}">${mk(PLART,'♫')}<b>${esc(p.name)}</b></div>`));
+    quick=quick.concat(al.slice(0,Math.max(0,8-quick.length)).map(albQ));
+  }
+  let h=top+'<div class="grid">'+quick.join('')+'</div>';
+  if(chip!=='Álbuns'){
+    const rs=L('r',(recent.length?recent:added).slice(0,12));
+    h+=`<h2>${recent.length?'Tocadas recentemente':'Adicionadas recentemente'}</h2><div class="row">`+rs.map((s,i)=>`<div class="big" data-l="r" data-i="${i}">${art(s)}<p>${esc(s.title)}</p><small>${esc(s.artist)}</small></div>`).join('')+'</div>';
+  }
+  if(chip!=='Músicas'){
+    h+='<h2>Seus álbuns</h2><div class="row">'+al.map(a=>`<div class="big" data-go="album" data-k="${esc(a.key)}">${art(alArt(a))}<p>${esc(a.name)}</p><small>Álbum · ${esc(a.artist)}</small></div>`).join('')+'</div>';
+  }
+  return h;
+}
+
+function lib(){
+  let h='<h1>Sua biblioteca</h1><div class="top">'+chips(['Músicas','Álbuns','Artistas','Playlists','Curtidas','No celular'],libChip,'lib')+'</div>';
+  if(!songs.length)return h+empty();
+  if(libChip==='Playlists')h+=plLib();
+  else if(libChip==='Álbuns')h+=albums().map(alRow).join('');
+  else if(libChip==='Artistas'){
+    const names=[...new Set(songs.map(s=>s.artist))].sort((a,b)=>norm(a).localeCompare(norm(b)));
+    h+=names.map(n=>`<div class="item r" data-go="artist" data-k="${esc(n)}">${art(songs.find(s=>s.artist===n))}<div><b>${esc(n)}</b><span>Artista</span></div></div>`).join('');
+  }else{
+    const list=L('l',(libChip==='Curtidas'?songs.filter(s=>s.fav):libChip==='No celular'?songs.filter(s=>s.src!=='server'||s.dl):[...songs]).sort(byTitle));
+    h+=list.length?list.map((s,i)=>row(s,i,'l')).join(''):'<p class="sub">Nada por aqui ainda.</p>';
+  }
+  return h;
+}
+
+function detail(){
+  let t='',sub='',list=[];
+  if(cur.v==='album'){
+    const a=albums().find(x=>x.key===cur.k);
+    if(a){t=a.name;sub=a.artist;list=[...a.songs].sort((x,y)=>(x.track||999)-(y.track||999)||byTitle(x,y))}
+  }else if(cur.v==='artist'){t=cur.k;sub='Artista';list=songs.filter(s=>s.artist===cur.k).sort(byTitle)}
+  else if(cur.v==='favs'){list=songs.filter(s=>s.fav).sort(byTitle);t='Músicas curtidas';sub=list.length+' músicas'}
+  else{list=[...songs].sort(byTitle);t='Todas as músicas';sub=list.length+' músicas'}
+  L('l',list);
+  return backBtn+`<div class="head">${list[0]?art(list[0]):''}<div><h1>${esc(t)}</h1><span class="sub">${esc(sub)}</span></div></div>`+
+    (list.length?'<div class="acts"><button class="btn" data-act="playall">▶ Tocar</button><button class="btn alt" data-act="shuffle">Aleatório</button><button class="btn alt" data-act="addall">+ Playlist</button>'+(native&&list.some(s=>s.src==='server'&&!s.dl)?'<button class="btn alt" data-act="dlall">⬇ Baixar</button>':'')+'</div>':'')+
+    (list.length?list.map((s,i)=>row(s,i,'l')).join(''):'<p class="sub">Nada por aqui.</p>');
+}
+
+function srvView(){
+  let h=backBtn+'<h1>Servidor</h1>';
+  if(cfg)h+=`<p class="sub">Conectado a ${esc(cfg.url)} como ${esc(cfg.user)}.</p><p class="sub" style="margin:4px 0 14px">${songs.filter(s=>s.src==='server').length} músicas do servidor na biblioteca.</p><div class="acts"><button class="btn" data-act="sync">Sincronizar agora</button><button class="btn alt" data-act="disc">Desconectar</button></div>`;
+  else h+='<p class="sub" style="margin-bottom:14px">Conecte ao seu servidor Navidrome para ouvir por streaming e baixar músicas para ouvir sem internet.</p><input type="text" id="su" placeholder="Endereço: http://192.168.0.10:4533" autocapitalize="off" autocomplete="off"><input type="text" id="sn" placeholder="Usuário" autocapitalize="off" autocomplete="off"><input type="password" id="sp" placeholder="Senha"><div id="serr"></div><button class="btn" data-act="connect">Conectar</button>';
+  return h;
+}
+
+function doSearch(q){
+  q=norm(q.trim());const box=$('#res');
+  if(!songs.length){box.innerHTML=empty();return}
+  if(!q){box.innerHTML='<p class="sub">Busque pelo que está na sua biblioteca.</p>';return}
+  const ss=L('l',songs.filter(s=>norm(s.title+' '+s.artist+' '+s.album).includes(q)).sort(byTitle).slice(0,40));
+  const as=albums().filter(a=>norm(a.name+' '+a.artist).includes(q)).slice(0,6);
+  box.innerHTML=as.map(alRow).join('')+ss.map((s,i)=>row(s,i,'l')).join('')||'<p class="sub">Nada encontrado.</p>';
+}
+
+function render(keep){
+  const m=$('#main'),y=keep?m.scrollTop:0;
+  lists={};unsubs.forEach(x=>x());unsubs=[];
+  document.querySelectorAll('nav [data-tab]').forEach(b=>b.classList.toggle('act',b.dataset.tab===root));
+  if(cur.v==='search'){
+    m.innerHTML='<h1>Buscar</h1><input type="text" id="q" placeholder="Músicas, álbuns ou artistas" autocomplete="off"><div id="res"></div>';
+    $('#q').oninput=e=>doSearch(e.target.value);doSearch('');
+  }else m.innerHTML=(({home,lib,srv:srvView,profile:profileView,stats:statsView,edit:editView,recent:recentView,social:socialView,chat:chatView,pl:plView})[cur.v]||detail)();
+  m.scrollTop=y;
+  if(cur.v==='social')socialMount();else if(cur.v==='chat')chatMount();
+  ui();
+}
+const refresh=()=>cur.v==='search'?doSearch($('#q').value):(cur.v==='chat'||cur.v==='social'?0:render(true));
+
+$('#main').onclick=e=>{
+  const t=e.target.closest('[data-menu],[data-l],[data-go],[data-chip],[data-lib],[data-act],[data-sw],[data-per],[data-fol],[data-chat]');
+  if(!t)return;
+  const d=t.dataset;
+  if(d.menu)sheet(d.menu);
+  else if(d.l)play(lists[d.l],+d.i);
+  else if(d.go)go(d.go,d.k,d.n);
+  else if(d.chip){chip=d.chip;render()}
+  else if(d.per){per=d.per;render()}
+  else if(d.fol)follow(d.fol)
+  else if(d.chat)go('chat',d.chat,d.n)
+  else if(d.act==='ssave')saveCfg()
+  else if(d.act==='sclaim')claim()
+  else if(d.act==='sretry'){sstate='loading';render()}
+  else if(d.act==='sreset')sreset()
+  else if(d.act==='csend')sendMsg()
+  else if(d.act==='addall'&&lists.l&&lists.l.length)pickPL(lists.l,lists.l.length+' músicas')
+  else if(d.act==='plnew'){const n=$('#npl').value.trim();if(!n)toast('Digite um nome para a playlist.');else go('pl',newPL(n).id)}
+  else if(d.act==='plren'){const p=PL.find(x=>x.id===cur.k),n=$('#pln').value.trim();if(p&&n){p.name=n.slice(0,40);savePL();toast('Nome salvo');render(true)}}
+  else if(d.act==='pldel'){if(confirm('Excluir esta playlist? As músicas não são apagadas.')){PL=PL.filter(x=>x.id!==cur.k);savePL();back()}}
+  else if(d.sw){readName();profile.ac=d.sw;saveProfile();render(true)}
+  else if(d.act==='pickAvatar'){readName();$('#pfile').click()}
+  else if(d.act==='saveProfile'){readName();saveProfile();back();toast('Perfil salvo')}
+  else if(d.lib){libChip=d.lib;render()}
+  else if(d.act==='back')back();
+  else if(d.act==='add')$('#file').click();
+  else if(d.act==='srv')go('srv');
+  else if(d.act==='connect')connect();
+  else if(d.act==='sync')sync(true);
+  else if(d.act==='disc')disconnect();
+  else if(d.act==='dlall'&&lists.l)dlMany(lists.l);
+  else if(d.act==='playall'&&lists.l&&lists.l.length){shuf=false;ctl();play(lists.l,0)}
+  else if(d.act==='shuffle'&&lists.l&&lists.l.length){shuf=true;ctl();play(lists.l,Math.floor(Math.random()*lists.l.length))}
+};
+
+/* ---------- Menu da música ---------- */
+function sheet(id){
+  const s=songs.find(x=>x.id===id),sh=$('#sheet');
+  if(!s)return;
+  sh.innerHTML=`<div class="box"><b>${esc(s.title)}</b><span class="sub">${esc(s.artist)}</span><span class="sub" style="margin-bottom:6px">Ouvida ${s.plays||0}× · ${fmtDur(s.secs||0)} no total</span><button data-s="fav">${s.fav?'Remover das curtidas':'Curtir'}</button><button data-s="addpl">Adicionar à playlist</button>${cur.v==='pl'?'<button data-s="rmpl">Remover desta playlist</button>':''}${s.src==='server'&&native?`<button data-s="dl">${s.dl?'Remover download':'Baixar para ouvir offline'}</button>`:''}${s.src==='server'?'':'<button data-s="del" class="red">Remover da biblioteca</button>'}<button data-s="x">Cancelar</button></div>`;
+  sh.hidden=false;
+  sh.onclick=async e=>{
+    const a=e.target.dataset.s;
+    if(!a&&e.target!==sh)return;
+    sh.hidden=true;
+    if(a==='fav'){s.fav=!s.fav;await save(s);favIcon();refresh()}
+    else if(a==='addpl')pickPL([s],s.title)
+    else if(a==='rmpl'){const p=PL.find(x=>x.id===cur.k);if(p){p.ids=p.ids.filter(x=>x!==s.id);savePL();toast('Removida da playlist')}refresh()}
+    else if(a==='dl'){await download(s);refresh()}
+    else if(a==='del'){await remove(s);refresh();toast('Música removida')}
+  };
+}
+async function remove(s){
+  await tx('songs','readwrite',st=>st.delete(s.id));
+  await tx('files','readwrite',st=>st.delete(s.id));
+  songs=songs.filter(x=>x.id!==s.id);
+  if(urls[s.id]){URL.revokeObjectURL(urls[s.id]);delete urls[s.id]}
+  const c=queue[idx];
+  if(c&&c.id===s.id){audio.pause();audio.removeAttribute('src');queue=[];idx=-1;$('#mini').hidden=true;$('#full').hidden=true}
+  else if(c){queue=queue.filter(x=>x.id!==s.id);idx=queue.findIndex(x=>x.id===c.id)}
+}
+
+/* ---------- Importar músicas ---------- */
+function toast(t){const e=$('#toast');e.textContent=t;e.hidden=false;clearTimeout(tt);tt=setTimeout(()=>e.hidden=true,2600)}
+$('#file').onchange=async e=>{
+  const files=[...e.target.files].filter(f=>/^audio\//.test(f.type)||/\.(mp3|m4a|flac|ogg|opus|wav|aac)$/i.test(f.name));
+  e.target.value='';
+  let n=0;
+  for(const f of files){
+    toast('Adicionando '+(++n)+' de '+files.length+'…');
+    try{
+      const tg=await readTags(f);
+      const s={id:f.name+'|'+f.size,src:'local',title:tg.title||f.name.replace(/\.[^.]+$/,''),artist:tg.artist||'Artista desconhecido',album:tg.album||'Sem álbum',track:tg.track||0,cover:tg.cover||null,duration:await getDur(f),added:Date.now(),plays:0,last:0,fav:false};
+      const old=songs.find(x=>x.id===s.id);
+      if(old){s.fav=old.fav;s.plays=old.plays;s.last=old.last}
+      await tx('files','readwrite',st=>st.put(f,s.id));
+      await save(s);
+      songs=songs.filter(x=>x.id!==s.id);songs.push(s);
+    }catch(err){toast('Não foi possível adicionar '+f.name)}
+  }
+  if(files.length){toast(files.length+' música(s) adicionada(s)');if(cur.v!=='search')render(true)}
+};
+
+/* ---------- Player ---------- */
+function play(list,i){queue=list;idx=i;load()}
+async function load(){
+  const s=queue[idx];if(!s)return;
+  const my=++loadId;flush();lastT=0;
+  let src;
+  if(s.src==='server'){
+    if(s.dl)src=Capacitor.convertFileSrc(s.dl.uri);
+    else if(cfg)src=surl('stream',{id:s.sid,format:'raw'});
+    else{toast('Conecte ao servidor para ouvir essa música.');return}
+  }else{
+    const blob=await tx('files','readonly',st=>st.get(s.id));
+    if(my!==loadId)return;
+    if(!blob){toast('Arquivo não encontrado. Remova e adicione de novo.');return}
+    src=URL.createObjectURL(blob);
+  }
+  if(curUrl){URL.revokeObjectURL(curUrl);curUrl=''}
+  if(src.startsWith('blob:'))curUrl=src;
+  audio.src=src;audio.play().catch(()=>{});
+  s.plays=(s.plays||0)+1;s.last=Date.now();save(s);
+  ui();tint(s);
+  if('mediaSession' in navigator){
+    const u=cu(s);
+    navigator.mediaSession.metadata=new MediaMetadata({title:s.title,artist:s.artist,album:s.album,artwork:u?[{src:u,sizes:'512x512'}]:[]});
+    navigator.mediaSession.setActionHandler('previoustrack',prev);
+    navigator.mediaSession.setActionHandler('nexttrack',()=>next());
+  }
+}
+function ui(){
+  const s=queue[idx];if(!s)return;
+  $('#mini').hidden=false;
+  $('#mart').innerHTML=art(s);$('#fartbox').innerHTML=art(s);
+  $('#mt').textContent=$('#ft').textContent=s.title;
+  $('#ma').textContent=$('#fa').textContent=s.artist;
+  favIcon();
+  document.querySelectorAll('#main .item[data-l]').forEach(el=>{
+    const x=lists[el.dataset.l]&&lists[el.dataset.l][+el.dataset.i];
+    el.classList.toggle('on',!!x&&x.id===s.id);
+  });
+}
+function tint(s){
+  const r=document.documentElement.style;
+  const fb=()=>r.setProperty('--tint','hsl('+hue(s.album||s.title)+',40%,26%)');
+  const u=cu(s);
+  if(!u){fb();return}
+  const im=new Image();im.crossOrigin='anonymous';
+  im.onload=()=>{
+    try{
+      const c=document.createElement('canvas');c.width=c.height=1;
+      const x=c.getContext('2d');x.drawImage(im,0,0,1,1);
+      const d=x.getImageData(0,0,1,1).data;
+      r.setProperty('--tint','rgb('+(d[0]*.65|0)+','+(d[1]*.65|0)+','+(d[2]*.65|0)+')');
+    }catch(e){fb()}
+  };
+  im.onerror=fb;im.src=u;
+}
+function favIcon(){const s=queue[idx];$('#fav').innerHTML=IC.heart(s&&s.fav)}
+function ctl(){
+  $('#shuf').classList.toggle('on',shuf);
+  $('#rep').classList.toggle('on',rep>0);
+  $('#rep').innerHTML=IC.rep+(rep===2?'<b>1</b>':'');
+}
+function next(auto){
+  if(!queue.length)return;
+  if(auto&&rep===2){audio.currentTime=0;audio.play();return}
+  if(shuf&&queue.length>1){let n;do n=Math.floor(Math.random()*queue.length);while(n===idx);idx=n;load();return}
+  if(idx<queue.length-1){idx++;load()}
+  else if(rep===1){idx=0;load()}
+  else audio.pause();
+}
+function prev(){if(audio.currentTime>3||idx<=0)audio.currentTime=0;else{idx--;load()}}
+const toggle=()=>{if(audio.src)audio.paused?audio.play().catch(()=>{}):audio.pause()};
+const icon=()=>{$('#mpp').innerHTML=$('#pp').innerHTML=audio.paused?IC.play:IC.pause};
+audio.onplay=icon;
+audio.onpause=()=>{icon();flush()};
+audio.onended=()=>{flush();next(true)};
+audio.onerror=()=>{if(audio.getAttribute('src'))toast('Não foi possível tocar essa música.')};
+let seeking=false;
+audio.ontimeupdate=()=>{
+  const t=audio.currentTime,dt=t-lastT;lastT=t;
+  if(!audio.paused&&dt>0&&dt<1.5&&queue[idx])addTime(queue[idx],dt);
+  if(!audio.duration)return;
+  $('#seek').max=Math.floor(audio.duration);
+  if(!seeking)$('#seek').value=Math.floor(audio.currentTime);
+  $('#cur').textContent=fmt(audio.currentTime);$('#dur').textContent=fmt(audio.duration);
+  $('#mbar i').style.width=(audio.currentTime/audio.duration*100)+'%';
+};
+$('#seek').oninput=e=>{seeking=true;$('#cur').textContent=fmt(e.target.value)};
+$('#seek').onchange=e=>{audio.currentTime=+e.target.value;seeking=false};
+$('#pp').onclick=toggle;$('#prev').onclick=prev;$('#next').onclick=()=>next();
+$('#mpp').onclick=e=>{e.stopPropagation();toggle()};
+$('#shuf').onclick=()=>{shuf=!shuf;ctl()};
+$('#rep').onclick=()=>{rep=(rep+1)%3;ctl()};
+$('#fav').onclick=async()=>{const s=queue[idx];if(!s)return;s.fav=!s.fav;favIcon();await save(s)};
+$('#mini').onclick=()=>$('#full').hidden=false;
+$('#close').onclick=()=>{$('#full').hidden=true;refresh()};
+document.addEventListener('keydown',e=>{if(e.code==='Space'&&document.activeElement===document.body){e.preventDefault();toggle()}});
+
+/* ---------- Início ---------- */
+icon();ctl();setVol(vol);
+$('#vol').oninput=e=>setVol(e.target.value/100);
+$('#vol2').oninput=e=>setVol(e.target.value/100);
+$('#vol2').onclick=e=>e.stopPropagation();
+$('#vmute').onclick=()=>setVol(vol===0?lastVol:0);
+try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
+applyProfile();
+(async()=>{
+  try{songs=await tx('songs','readonly',st=>st.getAll())||[]}catch(e){toast('Não foi possível abrir a biblioteca.')}
+  render();
+  autoSync();
+})();
+</script>
+</body>
+</html>
