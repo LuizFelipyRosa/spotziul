@@ -217,7 +217,7 @@ function statsView(){
     const v=by[id],s=byId.get(id);
     total+=v;if(!s)return;
     sg.push([s,v]);
-    const a=byArt[s.artist]||(byArt[s.artist]={n:s.artist,v:0,s});a.v+=v;
+    arts(s).forEach(n=>{const k=norm(n),a=byArt[k]||(byArt[k]={n,v:0,s});a.v+=v});
     const k=s.album+'|'+s.artist,b=byAlb[k]||(byAlb[k]={n:s.album,v:0,s});b.v+=v;
   });
   sg.sort((x,y)=>y[1]-x[1]);
@@ -295,16 +295,27 @@ function watch(id){
 const dot=on=>`<i style="display:inline-block;width:9px;height:9px;border-radius:50%;background:${on?'var(--ac)':'#555'};margin-right:6px"></i>`;
 const fbtn=id=>`<button class="btn${myF[id]?' alt':''}" style="padding:8px 14px;font-size:13px" data-fol="${id}">${myF[id]?'Seguindo':'Seguir'}</button>`;
 const urow=(id,n)=>`<div class="item" data-chat="${id}" data-n="${esc(n)}"><div class="avatar" style="flex:none;width:48px;height:48px;font-size:20px">${esc(String(n||'?').charAt(0).toUpperCase())}</div><div><b>@${esc(n)}</b><span>${dot(P[id])}${P[id]?'Online':'Offline'}</span></div>${fbtn(id)}</div>`;
-function drawF(){const e=$('#sfr');if(!e)return;const ids=Object.keys(myF);e.innerHTML=ids.length?ids.map(id=>urow(id,U[id]||'…')).join(''):'<p class="sub">Você ainda não segue ninguém. Busque alguém pelo nome acima.</p>'}
-function drawR(){const e=$('#sres');if(!e)return;e.innerHTML=R.map(x=>urow(x[0],x[1])).join('')}
+function drawF(){const e=$('#sfr');if(!e)return;const ids=Object.keys(myF).sort((a,b)=>(!!P[b])-(!!P[a]));e.innerHTML=ids.length?ids.map(id=>urow(id,U[id]||'…')).join(''):'<p class="sub">Você ainda não segue ninguém. Busque alguém pelo nome acima.</p>'}
+let allU=null,lastQ='';
+function drawR(){
+  const e=$('#sres');if(!e)return;
+  const l=lastQ===''?[...R].sort((a,b)=>(!!P[b[0]])-(!!P[a[0]])):R;
+  e.innerHTML=l.length?(lastQ===''?'<h2>Pessoas no app</h2>':'')+l.map(x=>urow(x[0],x[1])).join(''):(lastQ?'<p class="sub">Ninguém encontrado com esse nome.</p>':'<p class="sub">Ainda não há outras pessoas no app. Convide seus amigos!</p>');
+}
+async function loadUsers(force){
+  if(allU&&!force)return;
+  const x=await db.ref('usernames').limitToFirst(1000).once('value');
+  allU=[];x.forEach(c=>{if(c.val()!==me.uid)allU.push([c.val(),c.key])});
+}
 async function find(q){
-  q=q.trim().toLowerCase();
-  if(q.length<2){R=[];drawR();return}
+  q=String(q||'').trim().toLowerCase().replace(/^@/,'');
+  lastQ=q;
   try{
-    const x=await db.ref('usernames').orderByKey().startAt(q).endAt(q+'\uf8ff').limitToFirst(15).once('value');
-    R=[];x.forEach(c=>{if(c.val()!==me.uid)R.push([c.val(),c.key])});
-    R.forEach(r=>watch(r[0]));drawR();
-    if(!R.length)$('#sres').innerHTML='<p class="sub">Ninguém encontrado com esse nome.</p>';
+    await loadUsers();
+    let l=allU;
+    if(q)l=l.filter(u=>u[1].includes(q)).sort((a,b)=>(b[1].startsWith(q)-a[1].startsWith(q))||a[1].localeCompare(b[1]));
+    else l=l.filter(u=>!myF[u[0]]).slice(0,12);
+    R=l.slice(0,20);R.forEach(r=>watch(r[0]));drawR();
   }catch(e){toast('Erro na busca: '+e.message)}
 }
 const follow=id=>db.ref('follows/'+me.uid+'/'+id)[myF[id]?'remove':'set'](true);
@@ -314,7 +325,7 @@ function socialView(){
   if(sstate==='loading')return h+'<p class="sub">Conectando…</p>';
   if(sstate==='error')return h+`<p class="sub">Não foi possível conectar: ${esc(serr)}</p><div class="acts"><button class="btn" data-act="sretry">Tentar de novo</button><button class="btn alt" data-act="sreset">Trocar configuração</button></div>`;
   if(sstate==='noname')return h+'<p class="sub" style="margin-bottom:12px">Escolha seu nome de usuário. Ele é único e as pessoas vão te achar por ele.</p><input type="text" id="unm" maxlength="20" placeholder="seunome" autocapitalize="off" autocomplete="off" value="'+esc(norm(profile.name).replace(/[^a-z0-9_]/g,''))+'"><div id="uerr"></div><button class="btn" data-act="sclaim">Criar conta</button>';
-  return h+`<p class="sub" style="margin-bottom:12px">Você é @${esc(me.name)}</p><input type="text" id="sq" placeholder="Buscar pessoas pelo nome" autocapitalize="off" autocomplete="off"><div id="sres"></div><h2>Seguindo</h2><div id="sfr"></div><div class="acts" style="margin-top:20px"><button class="btn alt" data-act="sreset">Sair da conta online</button></div>`;
+  return h+`<p class="sub" style="margin-bottom:12px">Você é @${esc(me.name)}</p><input type="text" id="sq" placeholder="Buscar pessoas (nome ou parte do nome)" autocapitalize="off" autocomplete="off"><div id="sres"></div><h2>Seguindo</h2><div id="sfr"></div><div class="acts" style="margin-top:20px"><button class="btn alt" data-act="sreset">Sair da conta online</button></div>`;
 }
 function socialMount(){
   if(sstate==='loading'&&!initP)socialInit();
@@ -322,7 +333,8 @@ function socialMount(){
   const fr=db.ref('follows/'+me.uid);
   const cb=fr.on('value',x=>{myF=x.val()||{};Object.keys(myF).forEach(watch);drawF();drawR()});
   unsubs.push(()=>fr.off('value',cb));
-  let t;$('#sq').oninput=e=>{clearTimeout(t);t=setTimeout(()=>find(e.target.value),350)};
+  let t;$('#sq').oninput=e=>{clearTimeout(t);t=setTimeout(()=>find(e.target.value),250)};
+  find('');
 }
 function saveCfg(){
   const c=parseCfg($('#fbc').value);
@@ -440,6 +452,35 @@ function setVol(v) {
 }
 /*ENDPLAYLISTS*/
 
+/*ARTISTS*/
+const ASEP = /\s*(?:,|;|\s\/\s|\s(?:feat|ft|featuring|part)\.?\s)\s*/i;
+function splitArtists(str) {
+  const seen = new Set(), out = [];
+  String(str || '').split(ASEP).forEach(x => {
+    x = (x || '').trim(); const k = norm(x);
+    if (x && !seen.has(k)) { seen.add(k); out.push(x) }
+  });
+  return out;
+}
+function arts(s) {
+  const raw = s.artistsRaw ? s.artistsRaw.split('\u001f') : [s.artist];
+  const seen = new Set(), out = [];
+  raw.forEach(r => splitArtists(r).forEach(n => { const k = norm(n); if (!seen.has(k)) { seen.add(k); out.push(n) } }));
+  return out.length ? out : [s.artist || 'Artista desconhecido'];
+}
+function artistMap() {
+  const m = new Map();
+  songs.forEach(s => arts(s).forEach(n => {
+    const k = norm(n); let a = m.get(k);
+    if (!a) { a = { name: n, songs: [] }; m.set(k, a) }
+    a.songs.push(s);
+  }));
+  return [...m.values()].sort((x, y) => norm(x.name).localeCompare(norm(y.name)));
+}
+const byArtist = n => songs.filter(s => arts(s).some(a => norm(a) === norm(n)));
+const albumArtistOf = s => s.albumArtist || arts(s)[0] || s.artist || 'Artista desconhecido';
+/*ENDARTISTS*/
+
 /*MD5*/
 function md5(s){
   const k=new Int32Array(64),r=[7,12,17,22,5,9,14,20,4,11,16,23,6,10,15,21];
@@ -475,21 +516,32 @@ try{if(!cfg&&!localStorage.getItem('nodefault'))cfg=DEFAULT_SERVER}catch(e){}
 const native=!!(window.Capacitor&&Capacitor.isNativePlatform&&Capacitor.isNativePlatform());
 const surl=(ep,p)=>cfg.url+'/rest/'+ep+'?'+new URLSearchParams(Object.assign({u:cfg.user,t:cfg.token,s:cfg.salt,v:'1.16.1',c:'spotziul',f:'json'},p));
 async function api(ep,p){
-  const r=await fetch(surl(ep,p));
-  const j=(await r.json())['subsonic-response'];
-  if(j.status!=='ok')throw new Error(j.error?j.error.message:'Erro no servidor');
-  return j;
+  const ctl=typeof AbortController!=='undefined'?new AbortController():null;
+  const t=setTimeout(()=>{if(ctl)ctl.abort()},20000);
+  try{
+    const r=await Promise.race([fetch(surl(ep,p),ctl?{signal:ctl.signal}:undefined),new Promise((ok,no)=>setTimeout(()=>no(new Error('Tempo esgotado')),22000))]);
+    let j;
+    try{j=(await r.json())['subsonic-response']}catch(e){throw new Error('Resposta inesperada do servidor. Confira o endereço.')}
+    if(!j)throw new Error('Resposta inesperada do servidor.');
+    if(j.status!=='ok')throw new Error(j.error?j.error.message:'Erro no servidor');
+    return j;
+  }finally{clearTimeout(t)}
 }
-const toSong=s=>({id:'srv:'+s.id,sid:s.id,src:'server',title:s.title||'Sem título',artist:s.artist||'Artista desconhecido',album:s.album||'Sem álbum',track:s.track||0,duration:s.duration||0,coverArt:s.coverArt||null,suffix:s.suffix||'mp3',cover:null,added:Date.parse(s.created)||Date.now(),plays:0,last:0,fav:false});
+const toSong=s=>({id:'srv:'+s.id,sid:s.id,src:'server',title:s.title||'Sem título',artist:s.artist||'Artista desconhecido',album:s.album||'Sem álbum',track:s.track||0,duration:s.duration||0,coverArt:s.coverArt||null,suffix:s.suffix||'mp3',artistsRaw:(s.artists||[]).map(a=>a&&a.name).filter(Boolean).join('\u001f'),albumArtist:s.displayAlbumArtist||(s.albumArtists&&s.albumArtists[0]&&s.albumArtists[0].name)||'',disc:s.discNumber||0,cover:null,added:Date.parse(s.created)||Date.now(),plays:0,last:0,fav:false});
 async function fetchAll(){
   let got=[];
-  for(let o=0;;o+=500){
-    const r=await api('search3',{query:'',songCount:500,songOffset:o,artistCount:0,albumCount:0});
-    const l=(r.searchResult3&&r.searchResult3.song)||[];
-    got=got.concat(l);
-    if(l.length<500)break;
+  for(const q of ['','*']){
+    got=[];
+    try{
+      for(let o=0;;o+=500){
+        const r=await api('search3',{query:q,songCount:500,songOffset:o,artistCount:0,albumCount:0});
+        const l=(r.searchResult3&&r.searchResult3.song)||[];
+        got=got.concat(l);
+        if(l.length<500)break;
+      }
+    }catch(e){got=[]}
+    if(got.length)return got;
   }
-  if(got.length)return got;
   for(let o=0;;o+=100){
     const r=await api('getAlbumList2',{type:'alphabeticalByName',size:100,offset:o});
     const al=(r.albumList2&&r.albumList2.album)||[];
@@ -513,7 +565,7 @@ async function sync(manual,quiet){
     const fresh=got.map(x=>{
       const n=toSong(x),o=old.get(n.id);
       if(!o){added++;dirty.push(n);return n}
-      const ks=['title','artist','album','track','duration','coverArt','suffix'];
+      const ks=['title','artist','album','track','duration','coverArt','suffix','artistsRaw','albumArtist','disc'];
       if(ks.some(k=>o[k]!==n[k])){ks.forEach(k=>{o[k]=n[k]});dirty.push(o)}
       return o;
     });
@@ -530,14 +582,14 @@ async function sync(manual,quiet){
     if(!quiet)toast(manual?'Falha ao sincronizar: '+e.message:'Servidor indisponível');
   }finally{syncing=false}
 }
-/* sincronização automática: a cada 5 minutos, ao voltar para o app e ao reconectar */
+/* sincronização automática: a cada 3 minutos, ao voltar para o app e ao reconectar */
 const autoSync=()=>{if(cfg&&navigator.onLine&&!document.hidden)sync(false,true)};
-setInterval(autoSync,5*60*1000);
+setInterval(autoSync,3*60*1000);
 document.addEventListener('visibilitychange',()=>{if(document.hidden)flush();else autoSync()});
 window.addEventListener('pagehide',flush);
 window.addEventListener('online',autoSync);
 async function connect(){
-  let url=$('#su').value.trim().replace(/\/+$/,'');
+  let url=$('#su').value.trim().replace(/\/+$/,'').replace(/\/rest$/,'');
   if(!/^https?:\/\//.test(url))url='http://'+url;
   const salt=Math.random().toString(36).slice(2,10),old=cfg;
   cfg={url,user:$('#sn').value.trim(),salt,token:md5($('#sp').value+salt)};
@@ -621,6 +673,7 @@ async function readTags(f){
       if(id==='TIT2')o.title=txt(d);
       else if(id==='TPE1')o.artist=txt(d);
       else if(id==='TALB')o.album=txt(d);
+      else if(id==='TPE2')o.albumArtist=txt(d);
       else if(id==='TRCK')o.track=parseInt(txt(d))||0;
       else if(id==='APIC'&&!o.cover){
         let q=1;while(q<d.length&&d[q])q++;
@@ -671,7 +724,7 @@ $('#addb').onclick=()=>$('#file').click();
 /* ---------- Telas ---------- */
 function albums(){
   const m={};
-  songs.forEach(s=>{const k=s.album+'|'+s.artist;(m[k]=m[k]||{key:k,name:s.album,artist:s.artist,songs:[]}).songs.push(s)});
+  songs.forEach(s=>{const aa=albumArtistOf(s),k=s.album+'|'+aa;(m[k]=m[k]||{key:k,name:s.album,artist:aa,songs:[]}).songs.push(s)});
   return Object.values(m).sort((a,b)=>norm(a.name).localeCompare(norm(b.name)));
 }
 const alArt=a=>a.songs.find(s=>s.cover)||a.songs[0];
@@ -717,8 +770,8 @@ function lib(){
   if(libChip==='Playlists')h+=plLib();
   else if(libChip==='Álbuns')h+=albums().map(alRow).join('');
   else if(libChip==='Artistas'){
-    const names=[...new Set(songs.map(s=>s.artist))].sort((a,b)=>norm(a).localeCompare(norm(b)));
-    h+=names.map(n=>`<div class="item r" data-go="artist" data-k="${esc(n)}">${art(songs.find(s=>s.artist===n))}<div><b>${esc(n)}</b><span>Artista</span></div></div>`).join('');
+    const am=artistMap();
+    h+=am.map(a=>`<div class="item r" data-go="artist" data-k="${esc(a.name)}">${art(a.songs[0])}<div><b>${esc(a.name)}</b><span>${a.songs.length} música${a.songs.length>1?'s':''}</span></div></div>`).join('');
   }else{
     const list=L('l',(libChip==='Curtidas'?songs.filter(s=>s.fav):libChip==='No celular'?songs.filter(s=>s.src!=='server'||s.dl):[...songs]).sort(byTitle));
     h+=list.length?list.map((s,i)=>row(s,i,'l')).join(''):'<p class="sub">Nada por aqui ainda.</p>';
@@ -730,8 +783,8 @@ function detail(){
   let t='',sub='',list=[];
   if(cur.v==='album'){
     const a=albums().find(x=>x.key===cur.k);
-    if(a){t=a.name;sub=a.artist;list=[...a.songs].sort((x,y)=>(x.track||999)-(y.track||999)||byTitle(x,y))}
-  }else if(cur.v==='artist'){t=cur.k;sub='Artista';list=songs.filter(s=>s.artist===cur.k).sort(byTitle)}
+    if(a){t=a.name;sub=a.artist;list=[...a.songs].sort((x,y)=>(x.disc||0)-(y.disc||0)||(x.track||999)-(y.track||999)||byTitle(x,y))}
+  }else if(cur.v==='artist'){t=cur.k;sub='Artista';list=byArtist(cur.k).sort(byTitle)}
   else if(cur.v==='favs'){list=songs.filter(s=>s.fav).sort(byTitle);t='Músicas curtidas';sub=list.length+' músicas'}
   else{list=[...songs].sort(byTitle);t='Todas as músicas';sub=list.length+' músicas'}
   L('l',list);
@@ -747,13 +800,23 @@ function srvView(){
   return h;
 }
 
-function doSearch(q){
-  q=norm(q.trim());const box=$('#res');
+function doSearch(q0){
+  const q=norm(q0.trim()),box=$('#res');
   if(!songs.length){box.innerHTML=empty();return}
-  if(!q){box.innerHTML='<p class="sub">Busque pelo que está na sua biblioteca.</p>';return}
-  const ss=L('l',songs.filter(s=>norm(s.title+' '+s.artist+' '+s.album).includes(q)).sort(byTitle).slice(0,40));
-  const as=albums().filter(a=>norm(a.name+' '+a.artist).includes(q)).slice(0,6);
-  box.innerHTML=as.map(alRow).join('')+ss.map((s,i)=>row(s,i,'l')).join('')||'<p class="sub">Nada encontrado.</p>';
+  if(!q){box.innerHTML='<p class="sub">Busque por música, artista, álbum ou playlist.</p>';return}
+  const ws=q.split(/\s+/).filter(Boolean);
+  const has=t=>{t=norm(t);return ws.every(w=>t.includes(w))};
+  const ar=artistMap().filter(a=>has(a.name)).slice(0,5);
+  const as=albums().filter(a=>has(a.name+' '+a.artist)).slice(0,6);
+  const pls=PL.filter(p=>has(p.name)).slice(0,4);
+  const rank=x=>norm(x.title).startsWith(ws[0])?0:norm(x.title).includes(ws[0])?1:2;
+  const ss=L('l',songs.filter(x=>has(x.title+' '+x.artist+' '+x.album)).sort((x,y)=>rank(x)-rank(y)||byTitle(x,y)).slice(0,40));
+  let h='';
+  if(ar.length)h+='<h2>Artistas</h2>'+ar.map(a=>`<div class="item r" data-go="artist" data-k="${esc(a.name)}">${art(a.songs[0])}<div><b>${esc(a.name)}</b><span>Artista · ${a.songs.length} música${a.songs.length>1?'s':''}</span></div></div>`).join('');
+  if(pls.length)h+='<h2>Playlists</h2>'+pls.map(p=>`<div class="item" data-go="pl" data-k="${p.id}"><div class="avatar" style="flex:none;width:48px;height:48px;font-size:20px;border-radius:6px;background:${PLART}">♫</div><div><b>${esc(p.name)}</b><span>Playlist · ${p.ids.length} músicas</span></div></div>`).join('');
+  if(as.length)h+='<h2>Álbuns</h2>'+as.map(alRow).join('');
+  if(ss.length)h+='<h2>Músicas</h2>'+ss.map((x,i)=>row(x,i,'l')).join('');
+  box.innerHTML=h||'<p class="sub">Nada encontrado. Tente outras palavras.</p>';
 }
 
 function render(keep){
@@ -842,7 +905,7 @@ $('#file').onchange=async e=>{
     toast('Adicionando '+(++n)+' de '+files.length+'…');
     try{
       const tg=await readTags(f);
-      const s={id:f.name+'|'+f.size,src:'local',title:tg.title||f.name.replace(/\.[^.]+$/,''),artist:tg.artist||'Artista desconhecido',album:tg.album||'Sem álbum',track:tg.track||0,cover:tg.cover||null,duration:await getDur(f),added:Date.now(),plays:0,last:0,fav:false};
+      const s={id:f.name+'|'+f.size,src:'local',title:tg.title||f.name.replace(/\.[^.]+$/,''),artist:tg.artist||'Artista desconhecido',album:tg.album||'Sem álbum',albumArtist:tg.albumArtist||'',track:tg.track||0,cover:tg.cover||null,duration:await getDur(f),added:Date.now(),plays:0,last:0,fav:false};
       const old=songs.find(x=>x.id===s.id);
       if(old){s.fav=old.fav;s.plays=old.plays;s.last=old.last}
       await tx('files','readwrite',st=>st.put(f,s.id));
